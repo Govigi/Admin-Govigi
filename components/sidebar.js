@@ -6,14 +6,13 @@ import {
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Logo from '../public/GoVigiLogo.png'
-import React, { useEffect,useState } from "react";
 import { useRouter } from 'next/navigation'; 
-
+import { useState , useEffect} from 'react';
 export default function Sidebar() {
-  const [selectedCol, setCol] = useState("Dashboard");
+  const [selectedCol, setCol] = useState("Summary");
   const router = useRouter();
-   useEffect(() => {
-    router.push('/dashBoard');
+  useEffect(() => {
+    router.push('/Ordersummary');
   }, []);
   return (
     <aside className="w-50 h-screen bg-white shadow-md flex flex-col items-center py-6 space-y-6 fixed left-0 top-0">
@@ -21,20 +20,12 @@ export default function Sidebar() {
             <div className="flex items-center justify-center">
                 <Image src={Logo} alt="GoVigi Logo" width={80} height={30} />
             </div>
-            <div className='flex gap-3 cursor-pointer hover:text-green-600 transition-all duration-300 ease-in-out' 
-              onClick={()=>{
-                setCol("Dashboard")
-                router.push("/dashBoard");
-              }
-              }
-            >
-                {selectedCol==="Dashboard"?<div className='border-green-500 border-l-2'></div>:null}
+            <div className='flex gap-3 cursor-pointer hover:text-green-600 transition-all duration-300 ease-in-out' >
                 <Squares2X2Icon className="h-6 w-6 text-gray-700" />
                 <h1 className='text-gray-600'>DashBoard</h1>
             </div>
             <div className='flex gap-3 cursor-pointer hover:text-green-600 transition-all duration-300' 
               onClick={()=>{
-                setCol("Summary")
                 router.push('/Ordersummary');
               }
             }
