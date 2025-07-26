@@ -1,17 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon } from "@heroicons/react/24/solid";
-import { BarsArrowDownIcon } from "@heroicons/react/24/outline";
-import { FaCircle, FaExclamationTriangle, FaTimesCircle } from "react-icons/fa";
-
-const mockData = [
-  { name: "Tomatoes", price: "₹24.00",category: "Vegetables" ,unitType: "KG", stockStatus: "In Stock", Actions: "Edit" },
-  { name: "Green Cabbage", price: "₹64.00", category: "Vegetables",unitType: "KG", stockStatus: "In Stock", Actions: "Edit" },
-  { name: "Carrots", price: "₹54.00",category: "Vegetables", unitType: "KG", stockStatus: "Out of Stock", Actions: "Edit" },
-  ...Array(10).fill({
-    name: "Apples", price: "₹157.00", category: "Fruits",unitType: "KG", stockStatus: "Out of Stock", Actions: "View"
-  }),
-];
+import { FaCircle, FaTimesCircle } from "react-icons/fa";
+import { OrderSummaryUrl } from "../../API/endpoints";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,19 +11,38 @@ export default function PricingDetails() {
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
 
-const filteredData = useMemo(() => {
-  return mockData
-    .filter(item =>
-      item.name.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter(item =>
-      category ? item.category === category : true
-    )
-    .filter(item =>
-      status ? item.stockStatus === status : true
-    );
-}, [search, category, status]);
+  useEffect(() => {
+    const getProducts = async () => {
+      try {
+        const res = await fetch(OrderSummaryUrl.getAllProducts, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) throw new Error(`Error! status: ${res.status}`);
+
+        const json = await res.json();
+        setProducts(json);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+        setLoading(false);
+      }
+    };
+    getProducts();
+  }, []);
+
+  const filteredData = useMemo(() => {
+    return products
+      .filter(item => item.name.toLowerCase().includes(search.toLowerCase()))
+      .filter(item => category ? item.category === category : true)
+      .filter(item => status ? item.stock === status : true);
+  }, [search, category, status, products]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const currentData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -45,9 +55,7 @@ const filteredData = useMemo(() => {
   const exportToCSV = () => {
     const csv = [
       ["Name", "Price", "Unit Type", "Stock Status"],
-      ...filteredData.map(item =>
-        [item.name, item.price, item.unitType, item.stockStatus]
-      )
+      ...filteredData.map(item => [item.name, item.pricePerKg, item.unitType || 'KG', item.stock])
     ].map(row => row.join(",")).join("\n");
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -80,7 +88,7 @@ const filteredData = useMemo(() => {
             onChange={e => { setCategory(e.target.value); setPage(1); }}
           >
             <option value="">All Categories</option>
-            <option value="Vegetables">Vegetables</option>
+            <option value="Vegetable">Vegetables</option>
             <option value="Fruits">Fruits</option>
             <option value="Others">Others</option>
           </select>
@@ -91,15 +99,15 @@ const filteredData = useMemo(() => {
             onChange={e => { setStatus(e.target.value); setPage(1); }}
           >
             <option value="">All Stock Status</option>
-            <option value="In Stock">In Stock</option>
+            <option value="Available">In Stock</option>
             <option value="Out of Stock">Out of Stock</option>
           </select>
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded text-sm">
+          {/* <button className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded text-sm">
             + Add Stock
-          </button>
+          </button> */}
           <button
             onClick={exportToCSV}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded text-sm flex items-center gap-1"
@@ -123,23 +131,45 @@ const filteredData = useMemo(() => {
               <th className="p-2">Action</th>
             </tr>
           </thead>
-          <tbody>
-            {currentData.length > 0 ? currentData.map((item, idx) => (
-              <tr key={idx} className="hover:bg-gray-50 ">
-                <td className="p-2">{item.name}</td>
-                <td className="p-2">{item.price} Kg</td>
-                <td className="p-2">{item.unitType} Kg</td>
-                <td className="p-2 flex items-center gap-2">{renderStatusIcon(item.stockStatus)}{item.stockStatus}</td>
-                <td className="p-2">{item.Actions}</td>
-              </tr>
-            )) : (
-              <tr><td colSpan="7" className="text-center py-6">No data found</td></tr>
-            )}
-          </tbody>
+            <tbody className="text-sm text-gray-700">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-6">
+                    <div className="flex justify-center items-center space-x-2">
+                      <div className="w-4 h-4 border-4 border-gray-500  border-dotted rounded-full animate-spin"></div>
+                      <span className="text-gray-500">Loading data...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                currentData.map((item, idx) => (
+                  <tr key={idx} className="">
+                    <td className="p-3">{item.name}</td>
+                    <td className="p-3">{item.pricePerKg}</td>
+                    <td className="p-3">{item.unitType || 'KG'}</td>
+                    {/* <td className="p-3">{item.category}</td> */}
+                    <td className="p-3">
+                      {item.stock === 'Available' ? (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <FaCircle className="text-xs" /> {item.stock}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-red-500">
+                          <FaTimesCircle className="text-xs" /> {item.stock}
+                        </div>
+                      )}
+                    </td>
+                    <td className='p-3'>{"Edit"}</td>
+                    <td className="p-3 max-w-xs break-words">{item.deliveryUpdate}</td>
+                    {/* add more columns as needed */}
+                  </tr>
+                ))
+              )}
+            </tbody>
+
         </table>
       </div>
 
-      {/* Pagination */}
       {filteredData.length > 0 && (
         <div className="flex justify-center gap-2 mt-4">
           <button

@@ -1,17 +1,9 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo , useEffect} from 'react';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon } from "@heroicons/react/24/solid";
 import { BarsArrowDownIcon } from "@heroicons/react/24/outline";
 import { FaCircle, FaExclamationTriangle, FaTimesCircle } from "react-icons/fa";
-
-const mockData = [
-  { name: "Tomatoes", category: "Vegetables", currentStock: 45, minThreshold: 30, status: "Sufficient", lastUpdated: "14 Jul 2025, 10:45 AM" },
-  { name: "Green Cabbage", category: "Vegetables", currentStock: 18, minThreshold: 20, status: "Low Stock", lastUpdated: "14 Jul 2025, 10:30 AM" },
-  { name: "Carrots", category: "Vegetables", currentStock: 0, minThreshold: 25, status: "Out of Stock", lastUpdated: "14 Jul 2025, 10:20 AM" },
-  ...Array(10).fill({
-    name: "Apples", category: "Fruits", currentStock: 12, minThreshold: 20, status: "Low Stock", lastUpdated: "14 Jul 2025, 09:15 AM"
-  }),
-];
+import { OrderSummaryUrl } from '@/app/API/endpoints';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,22 +12,47 @@ export default function StockDetails() {
   const [page, setPage] = useState(1);
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState('');
-
+  const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState([]);
+  
+    useEffect(() => {
+      const getProducts = async () => {
+        try {
+          const res = await fetch(OrderSummaryUrl.getAllProducts, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+  
+          if (!res.ok) throw new Error(`Error! status: ${res.status}`);
+  
+          const json = await res.json();
+          setProducts(json);
+          setLoading(false);
+        } catch (err) {
+          console.error("Failed to fetch data:", err);
+          setLoading(false);
+        }
+      };
+      getProducts();
+    }, []);
+  
   const filteredData = useMemo(() => {
-    return mockData
+    return products
       .filter(item => item.name.toLowerCase().includes(search.toLowerCase()))
       .filter(item => (category ? item.category === category : true))
       .filter(item => (status ? (
         status === 'In Stock' ? item.status === 'Sufficient' : item.status === status
       ) : true));
-  }, [search, category, status]);
+  }, [products, search, category, status]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const currentData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const renderStatusIcon = (status) => {
-    if (status === "Sufficient") return <FaCircle className="text-green-500 text-xs" />;
-    if (status === "Low Stock") return <FaExclamationTriangle className="text-yellow-500 text-sm" />;
+    if (status === "Available") return <FaCircle className="text-green-500 text-xs" />;
+    // if (status === "Low Stock") return <FaExclamationTriangle className="text-yellow-500 text-sm" />;
     if (status === "Out of Stock") return <FaTimesCircle className="text-red-500 text-sm" />;
   };
 
@@ -77,7 +94,7 @@ export default function StockDetails() {
             onChange={e => { setCategory(e.target.value); setPage(1); }}
           >
             <option value="">All Categories</option>
-            <option value="Vegetables">Vegetables</option>
+            <option value="Vegetable">Vegetables</option>
             <option value="Fruits">Fruits</option>
             <option value="Others">Others</option>
           </select>
@@ -88,8 +105,8 @@ export default function StockDetails() {
             onChange={e => { setStatus(e.target.value); setPage(1); }}
           >
             <option value="">All Stock Status</option>
-            <option value="In Stock">In Stock</option>
-            <option value="Low Stock">Low Stock</option>
+            <option value="Available">In Stock</option>
+            {/* <option value="Low Stock">Low Stock</option> */}
             <option value="Out of Stock">Out of Stock</option>
           </select>
         </div>
@@ -124,14 +141,23 @@ export default function StockDetails() {
             </tr>
           </thead>
           <tbody>
-            {currentData.length > 0 ? currentData.map((item, idx) => (
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="text-center py-6">
+                  <div className="flex justify-center items-center gap-2">
+                    <div className="w-4 h-4 border-4 border-dotted border-gray-400 rounded-full animate-spin"></div>
+                    <span>Loading orders...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : currentData.length > 0 ? currentData.map((item, idx) => (
               <tr key={idx} className="hover:bg-gray-50 ">
                 <td className="p-2">{item.name}</td>
                 <td className="p-2">{item.category}</td>
                 <td className="p-2">{item.currentStock} Kg</td>
-                <td className="p-2">{item.minThreshold} Kg</td>
-                <td className="p-2 flex items-center gap-2">{renderStatusIcon(item.status)}{item.status}</td>
-                <td className="p-2">{item.lastUpdated}</td>
+                <td className="p-2">{"50"} Kg</td>
+                <td className="p-2 flex items-center gap-2">{renderStatusIcon(item.stock)}{item.stock}</td>
+                <td className="p-2">{item.timestamp}</td>
                 <td className="p-2 text-blue-600 cursor-pointer">View / Edit</td>
               </tr>
             )) : (
