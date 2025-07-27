@@ -38,7 +38,7 @@ const DeliveryDetails = () => {
 
   const formatAddress = (addressArr) => {
     const addr = addressArr[0] || {};
-    return `${addr.name || ''}, ${addr.contact || ''}, ${addr.email || ''}, ${addr.city || ''}, ${addr.state || ''} - ${addr.pincode || ''}`;
+    return `${addr.landmark || ''}, ${addr.city || ''}, ${addr.pincode || ''}`;
   };
 
   const rawFiltered = data.map((item, index) => ({
@@ -158,10 +158,10 @@ const DeliveryDetails = () => {
         <table className="min-w-full text-sm text-black border border-gray-200">
           <thead className="bg-gray-100">
             <tr>
-              <th className="py-2 px-3 text-left border-b">Order ID</th>
-              <th className="py-2 px-3 text-left border-b">Timestamp</th>
-              <th className="py-2 px-3 text-left border-b">Location</th>
-              <th className="py-2 px-3 text-left border-b">Status</th>
+              <th className="py-2 px-3 text-left ">Order ID</th>
+              <th className="py-2 px-3 text-left ">Timestamp</th>
+              <th className="py-2 px-3 text-left ">Location</th>
+              <th className="py-2 px-3 text-left ">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -176,7 +176,7 @@ const DeliveryDetails = () => {
               </tr>
             ) : currentData.length > 0 ? (
               currentData.map((item) => (
-                <tr key={item.orderId} className="border-b">
+                <tr key={item.orderId} className="">
                   <td className="py-2 px-3">{item.orderId}</td>
                   <td className="py-2 px-3">{item.timestamp}</td>
                   <td className="py-2 px-3 whitespace-pre-line">{item.location}</td>

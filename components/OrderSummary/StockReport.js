@@ -36,7 +36,7 @@ export default function StockReport({ stockData, loading }) {
                                 <tr key={index}>
                                     <td className="px-4 py-2 border-r-1 border-gray-200">{row.name}</td>
                                     <td className="px-4 py-2 border-r-1 border-gray-200">{row.currentStock+" KG"}</td>
-                                    <td className="px-4 py-2 border-r-1 border-gray-200">{"50 KG"}</td>
+                                    <td className="px-4 py-2 border-r-1 border-gray-200">{row.minimumThreshold + " KG"}</td>
                                     {/* <td className="px-4 py-2 border-r-1 border-gray-200">{row.price}</td> */}
                                     <td className={`px-4 py-2  ${
                                         row.stock === "Available"
