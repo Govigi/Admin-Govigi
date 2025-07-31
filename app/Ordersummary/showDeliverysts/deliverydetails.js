@@ -1,27 +1,30 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { FaCircle } from 'react-icons/fa';
-import { OrderSummaryUrl } from '../../API/endpoints';
+import { useState, useEffect } from "react";
+import { FaCircle } from "react-icons/fa";
+import { OrderSummaryUrl } from "../../API/endpoints";
 
 const ITEMS_PER_PAGE = 10;
 
 const DeliveryDetails = () => {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [data, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     const getData = async () => {
       try {
         const res = await fetch(OrderSummaryUrl.getOrderDetails, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
 
@@ -38,14 +41,19 @@ const DeliveryDetails = () => {
 
   const formatAddress = (addressArr) => {
     const addr = addressArr[0] || {};
-    return `${addr.landmark || ''}, ${addr.city || ''}, ${addr.pincode || ''}`;
+    return `${addr.landmark || ""}, ${addr.city || ""}, ${addr.pincode || ""}`;
   };
 
   const rawFiltered = data.map((item, index) => ({
-    orderId: index + 1,
+    orderId: index + 1, // for display only
+    _id: item._id, // keep original id for API
     timestamp: new Date(item.createdAt).toLocaleString(),
     location: formatAddress(item.address),
+    name: item.name,
+    contact: item.contact,
     status: item.status?.toLowerCase(),
+    items: item.items,
+    totalAmount: item.totalAmount,
   }));
 
   const filteredData = rawFiltered.filter((item) => {
@@ -53,7 +61,7 @@ const DeliveryDetails = () => {
       item.orderId.toString().includes(search) ||
       item.location.toLowerCase().includes(search.toLowerCase());
 
-    const statusMatch = statusFilter === '' || item.status === statusFilter;
+    const statusMatch = statusFilter === "" || item.status === statusFilter;
 
     const itemDate = new Date(item.timestamp);
     const from = fromDate ? new Date(fromDate) : null;
@@ -64,10 +72,13 @@ const DeliveryDetails = () => {
   });
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  const currentData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const currentData = filteredData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const downloadCSV = () => {
-    const headers = ['Order ID', 'Timestamp', 'Location', 'Status'];
+    const headers = ["Order ID", "Timestamp", "Location", "Status"];
     const rows = filteredData.map((item) => [
       item.orderId,
       item.timestamp,
@@ -76,29 +87,60 @@ const DeliveryDetails = () => {
     ]);
 
     const csvContent = [headers, ...rows]
-      .map(row => row.map(field => `"${field}"`).join(','))
-      .join('\n');
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.setAttribute('download', 'delivery_report.csv');
+    link.setAttribute("download", "delivery_report.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const statusColors = {
-    delivered: 'text-green-600',
-    'in transit': 'text-yellow-500',
-    pending: 'text-red-600',
+    delivered: "text-green-600",
+    "in transit": "text-yellow-500",
+    pending: "text-red-600",
   };
 
+  // Update status handler
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      setOrderLoading(true);
+      const res = await fetch(
+        `${OrderSummaryUrl.updateorderStatus}/${orderId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+      if (!res.ok) throw new Error(`Failed to update status: ${res.status}`);
+      // Refresh orders
+      const refreshed = await fetch(OrderSummaryUrl.getOrderDetails, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!refreshed.ok) throw new Error(`Error! status: ${refreshed.status}`);
+      const json = await refreshed.json();
+      setOrders(json);
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    } finally {
+      setOrderLoading(false);
+    }
+  };
   return (
     <div className="p-4 w-full">
       <div className="flex justify-between items-center flex-wrap mb-4">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-2 md:mb-0">Delivery Updates</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-2 md:mb-0">
+          Delivery Updates
+        </h1>
 
         <div className="flex flex-wrap gap-3 items-center w-full md:w-auto text-black">
           <input
@@ -161,7 +203,10 @@ const DeliveryDetails = () => {
               <th className="py-2 px-3 text-left ">Order ID</th>
               <th className="py-2 px-3 text-left ">Timestamp</th>
               <th className="py-2 px-3 text-left ">Location</th>
+              <th className="py-2 px-3 text-left ">Name</th>
+              <th className="py-2 px-3 text-left ">Contact</th>
               <th className="py-2 px-3 text-left ">Status</th>
+              <th className="py-2 px-3 text-left ">View</th>
             </tr>
           </thead>
           <tbody>
@@ -179,10 +224,44 @@ const DeliveryDetails = () => {
                 <tr key={item.orderId} className="">
                   <td className="py-2 px-3">{item.orderId}</td>
                   <td className="py-2 px-3">{item.timestamp}</td>
-                  <td className="py-2 px-3 whitespace-pre-line">{item.location}</td>
+                  <td className="py-2 px-3 whitespace-pre-line">
+                    {item.location}
+                  </td>
+                  <td className="py-2 px-3 whitespace-pre-line">{item.name}</td>
+                  <td className="py-2 px-3 whitespace-pre-line">
+                    {item.contact}
+                  </td>
                   <td className="py-2 px-3 flex items-center gap-2">
-                    <FaCircle className={`${statusColors[item.status]} text-xs`} />
-                    <span className={`${statusColors[item.status]} capitalize`}>{item.status}</span>
+                    <FaCircle
+                      className={`${statusColors[item.status]} text-xs`}
+                    />
+                    <span className={`${statusColors[item.status]} capitalize`}>
+                      {item.status}
+                    </span>
+                    {/* Status update dropdown */}
+                    <select
+                      className="ml-2 px-1 py-0.5 border border-gray-300 rounded text-xs text-black"
+                      value={item.status}
+                      onChange={(e) =>
+                        updateOrderStatus(item._id, e.target.value)
+                      }
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in transit">In Transit</option>
+                      <option value="delivered">Delivered</option>
+                    </select>
+                  </td>
+                  <td className="py-2 px-3 whitespace-pre-line">
+                    <button
+                      className="text-blue-600 hover:text-blue-800 focus:outline-none"
+                      style={{ textDecoration: "none" }}
+                      onClick={() => {
+                        setSelectedOrder(item);
+                        setShowModal(true);
+                      }}
+                    >
+                      View details
+                    </button>
                   </td>
                 </tr>
               ))
@@ -212,19 +291,87 @@ const DeliveryDetails = () => {
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 border rounded ${currentPage === i + 1 ? 'bg-gray-200 font-semibold' : ''}`}
+              className={`px-3 py-1 border rounded ${
+                currentPage === i + 1 ? "bg-gray-200 font-semibold" : ""
+              }`}
             >
               {i + 1}
             </button>
           ))}
 
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             className="px-3 py-1 border rounded disabled:opacity-50"
           >
             Next
           </button>
+        </div>
+      )}
+      {/* Modal for order details */}
+      {showModal && selectedOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            backdropFilter: "blur(6px)",
+            backgroundColor: "rgba(255,255,255,0.2)",
+          }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-lg w-full p-6 relative"
+            style={{ color: "#222" }}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+              onClick={() => setShowModal(false)}
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              Order Items
+            </h2>
+            <div className="space-y-4 max-h-80 overflow-y-auto">
+              {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                selectedOrder.items.map((item) => (
+                  <div
+                    key={item._id}
+                    className="flex items-center gap-4 border-b pb-2"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded border border-gray-300"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 text-base">
+                        {item.name}
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        Qty:{" "}
+                        <span className="font-medium">
+                          {item.quantityKg} kg
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        Price:{" "}
+                        <span className="font-medium">₹{item.price}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500">
+                  No items found for this order.
+                </div>
+              )}
+            </div>
+            <div className="mt-4 text-right font-semibold text-gray-900">
+              Total Amount: ₹{selectedOrder.totalAmount}
+            </div>
+          </div>
         </div>
       )}
     </div>
