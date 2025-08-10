@@ -316,62 +316,71 @@ const DeliveryDetails = () => {
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{
             backdropFilter: "blur(6px)",
-            backgroundColor: "rgba(255,255,255,0.2)",
-          }}
-        >
-          <div
-            className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-lg w-full p-6 relative"
-            style={{ color: "#222" }}
+            backgroundColor: "rgba(255,255,255,0.3)",
+          }}>
+        <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 relative">
+          {/* Close Button */}
+          <button
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl"
+            onClick={() => setShowModal(false)}
+            aria-label="Close"
           >
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
-              onClick={() => setShowModal(false)}
-              aria-label="Close"
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Order Items
-            </h2>
-            <div className="space-y-4 max-h-80 overflow-y-auto">
-              {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                selectedOrder.items.map((item) => (
-                  <div
-                    key={item._id}
-                    className="flex items-center gap-4 border-b pb-2"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded border border-gray-300"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900 text-base">
-                        {item.name}
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        Qty:{" "}
-                        <span className="font-medium">
-                          {item.quantityKg} kg
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        Price:{" "}
-                        <span className="font-medium">₹{item.price}</span>
-                      </div>
+            &times;
+          </button>
+
+          {/* Title */}
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-3">
+            Order Items
+          </h2>
+
+          {/* Item List */}
+          <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+            {selectedOrder.items && selectedOrder.items.length > 0 ? (
+              selectedOrder.items.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex items-center gap-4 border-b pb-3 last:border-b-0"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900">{item.name}</div>
+                    <div className="text-sm text-gray-600">
+                      Qty: <span className="font-medium">{item.quantityKg} kg</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Price:{" "}
+                      <span className="font-medium text-green-600">
+                        ₹{item.price}
+                      </span>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-gray-500">
-                  No items found for this order.
                 </div>
-              )}
+              ))
+            ) : (
+              <div className="text-gray-500 text-center py-6">
+                No items found for this order.
+              </div>
+            )}
+          </div>
+
+          {/* Order Summary */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg shadow-sm border">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-600 font-medium">Total Amount:</span>
+              <span className="text-lg font-bold text-green-700">
+                ₹{selectedOrder.totalAmount}
+              </span>
             </div>
-            <div className="mt-4 text-right font-semibold text-gray-900">
-              Total Amount: ₹{selectedOrder.totalAmount}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 font-medium">Location:</span>
+              <span className="text-gray-800">{selectedOrder.location}</span>
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>
