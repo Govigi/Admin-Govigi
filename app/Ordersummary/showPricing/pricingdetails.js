@@ -27,7 +27,7 @@ export default function PricingDetails() {
         if (!res.ok) throw new Error(`Error! status: ${res.status}`);
 
         const json = await res.json();
-        setProducts(json);
+        setProducts(json.products);
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch data:", err);

@@ -49,7 +49,7 @@ export default function OrderSummary() {
 
         const json = await res.json();
         console.log("Fetched data:", json);
-        setProducts(json);
+        setProducts(json.products);
         prodsetLoading(false);
         } catch (err) {
         console.error("Failed to fetch data:", err);
