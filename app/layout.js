@@ -1,13 +1,17 @@
 "use client";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TopBar from "../components/Topbar";
 import Sidebar from "../components/sidebar";
+import { SidePanelProvider } from "../Hooks/sidePanelContext";
+import SidePanel from "../components/Global/SidePanel";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import GlobalLoader from "../components/Global/GlobalLoader";
+import { LoadingProvider } from "@/Hooks/LoadingContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -38,23 +42,29 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <div className="flex flex-col h-screen">
-          {/* Hide sidebar/topbar on login page */}
-          {isClient && showLayout && pathname !== "/login" && <TopBar />}
-          <div className="flex flex-1">
-            {isClient && showLayout && pathname !== "/login" && (
-              <div className="w-50">
+      <body className={`${inter.className} ${geistMono.variable} antialiased`}>
+        <LoadingProvider>
+          <GlobalLoader />
+          <SidePanelProvider>
+            <div className="flex h-screen bg-gray-50 overflow-hidden">
+              {isClient && showLayout && pathname !== "/login" && (
                 <Sidebar />
+              )}
+              <div className="flex-1 flex flex-col ml-64">
+                {isClient && showLayout && pathname !== "/login" && (
+                  <div className="fixed top-0 left-64 right-0 z-20">
+                    <TopBar />
+                  </div>
+                )}
+                <main className="flex-1 mt-16 overflow-y-auto">
+                  {children}
+                </main>
               </div>
-            )}
-            <main className="flex-1 p-6 overflow-auto bg-gray-50">
-              {children}
-            </main>
-          </div>
-        </div>
+              {/* Global side panel */}
+              <SidePanel />
+            </div>
+          </SidePanelProvider>
+        </LoadingProvider>
       </body>
     </html>
   );
