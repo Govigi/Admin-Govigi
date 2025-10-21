@@ -37,7 +37,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="bg-white text-gray-800 px-6 py-4 shadow-md relative">
+    <header className="h-16 bg-white text-gray-800 px-6 py-4 border-b border-gray-200 relative">
       <div className="flex gap-7 justify-end mr-12">
         <Cog6ToothIcon className="h-6 w-6 text-gray-700" />
         <BellIcon className="h-6 w-6 text-gray-700" />
