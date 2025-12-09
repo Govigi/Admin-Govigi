@@ -9,23 +9,43 @@ import {
   UserGroupIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BanknotesIcon,
+  Cog6ToothIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import Logo from "../../public/GoVigiLogo.png";
+
+interface SubModule {
+  name: string;
+  path: string;
+}
+
+interface MenuItem {
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  path?: string;
+  subModules?: SubModule[];
+}
 
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [openMenus, setOpenMenus] = useState({});
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
-  const toggleMenu = (name) => {
+  const toggleMenu = (name: string) => {
     setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       name: "Dashboard",
       icon: Squares2X2Icon,
-      path: "/",
+      path: "/Dashboard",
+    },
+    {
+      name: "Drivers",
+      icon: TruckIcon,
+      path: "/drivers",
     },
     {
       name: "Orders",
@@ -39,7 +59,11 @@ export default function Sidebar() {
     {
       name: "Customers",
       icon: UserGroupIcon,
-      path: "/customers-dashboard",
+      subModules: [
+        { name: "Dashboard", path: "/customers-dashboard" },
+        { name: "Approvals", path: "/customers-dashboard/approvals" },
+        { name: "Segments", path: "/customers-dashboard/segments" },
+      ],
     },
     {
       name: "Products",
@@ -49,6 +73,23 @@ export default function Sidebar() {
         { name: "Stock Report", path: "/Ordersummary/stockReport" },
         { name: "Categories", path: "/Categories" },
       ],
+    },
+    {
+      name: "Finance",
+      icon: BanknotesIcon,
+      subModules: [
+        { name: "Transactions", path: "/finance/transactions" },
+      ],
+    },
+    {
+      name: "Settings",
+      icon: Cog6ToothIcon,
+      path: "/settings",
+    },
+    {
+      name: "Scheduling",
+      icon: Squares2X2Icon, // Reusing icon or pick a better one like CalendarIcon if available, but staying safe with imported ones
+      path: "/scheduling",
     },
   ];
 
@@ -72,20 +113,18 @@ export default function Sidebar() {
                 onClick={() =>
                   menu.subModules
                     ? toggleMenu(menu.name)
-                    : router.push(menu.path)
+                    : menu.path && router.push(menu.path)
                 }
                 className={`flex items-center justify-between w-full px-3 py-2 rounded-sm cursor-pointer transition-all duration-200
-                  ${
-                    isActive
-                      ? "bg-green-100 text-green-700 font-semibold"
-                      : "text-gray-700 hover:bg-gray-100"
+                  ${isActive
+                    ? "bg-green-100 text-green-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-100"
                   }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
-                    className={`h-5 w-5 ${
-                      isActive ? "text-green-600" : "text-gray-500"
-                    }`}
+                    className={`h-5 w-5 ${isActive ? "text-green-600" : "text-gray-500"
+                      }`}
                   />
                   <span>{menu.name}</span>
                 </div>
@@ -109,10 +148,9 @@ export default function Sidebar() {
                         key={sub.name}
                         onClick={() => router.push(sub.path)}
                         className={`px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all duration-200
-                          ${
-                            subActive
-                              ? "bg-green-50 text-green-700 font-medium"
-                              : "text-gray-600 hover:bg-gray-50"
+                          ${subActive
+                            ? "bg-green-50 text-green-700 font-medium"
+                            : "text-gray-600 hover:bg-gray-50"
                           }`}
                       >
                         {sub.name}

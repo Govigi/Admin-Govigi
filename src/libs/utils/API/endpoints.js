@@ -5,11 +5,16 @@ const backend_url = config.backend_url;
 export const OrderSummaryUrl = {
   login: backend_url + "/admin/login",
   getOrderDetails: backend_url + "/getAllOrders",
+  getOrdersByDateRange: backend_url + "/getOrdersByDateRange",
   getAllProducts: backend_url + "/getAllProducts",
   createProduct: backend_url + "/createProduct",
   updateProduct: backend_url + "/updateProduct",
   deleteProduct: backend_url + "/deleteProduct",
-  updateorderStatus: backend_url + "/updateStatus",
+  updateorderStatus: (id) => `${backend_url}/updateStatus/${id}`,
+  updatePaymentStatus: (id) => `${backend_url}/updatePaymentStatus/${id}`,
+  getUserOrders: backend_url + "/userOrders",
+  createOrder: backend_url + "/createOrder",
+  getOrderById: backend_url + "/getOrder",
 };
 
 export const ProductManagementUrl = {
@@ -19,6 +24,7 @@ export const ProductManagementUrl = {
 export const CategoryManagementUrl = {
   createCategory: backend_url + "/createCategory",
   getAllCategoriesStats: backend_url + "/getAllCategoriesStats",
+  getAllCategories: backend_url + "/getAllCategories",
 };
 
 export const CustomerDashboardUrl = {
@@ -39,4 +45,29 @@ export const CustomerTypesUrl = {
 export const StatesAndCitiesUrl = {
   getAllStates: backend_url + "/getStates/IN",
   getCitiesByState: backend_url + "/getCities/IN/{state}",
+};
+
+export const AdminUrl = {
+  // Scheduling
+  getSchedulingSettings: "http://localhost:8000/settings/scheduling",
+  updateSchedulingSettings: "http://localhost:8000/settings/scheduling",
+  // Customers
+  getPendingCustomers: backend_url + "/admin/customers/pending",
+  updateCustomerStatus: backend_url + "/admin/customers/{id}/status",
+  // Segments
+  createCustomerType: backend_url + "/admin/customer-types",
+  updateCustomerType: backend_url + "/admin/customer-types/{id}",
+  deleteCustomerType: backend_url + "/admin/customer-types/{id}",
+  getAllCustomerTypes: backend_url + "/getAllCustomerTypes", // Existing public one or admin specific if needed
+  // Drivers
+  createDriver: backend_url + "/admin/drivers",
+  getAllDrivers: backend_url + "/admin/drivers",
+  assignDriver: backend_url + "/admin/orders/{orderId}/assign-driver",
+  updateOrderStatus: backend_url + "/admin/orders/{orderId}/status",
+  updatePaymentStatus: backend_url + "/admin/orders/{orderId}/payment-status",
+  // Finance
+  getTransactions: backend_url + "/admin/finance/transactions",
+  // Settings
+  getSettings: backend_url + "/admin/settings/{key}",
+  updateSettings: backend_url + "/admin/settings",
 };
