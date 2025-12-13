@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import PathShower from "@/src/components/pathShower";
 import { PlusIcon, UserIcon, TruckIcon } from "@heroicons/react/24/outline";
 import axios from "axios";
 import { AdminUrl } from "@/src/libs/utils/API/endpoints";
@@ -55,11 +54,6 @@ export default function DriversPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            <PathShower
-                pathList={[
-                    ["drivers", "Driver Management"],
-                ]}
-            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
                 <div className="flex items-center justify-between mb-6">
