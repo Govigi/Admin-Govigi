@@ -118,7 +118,6 @@ const columns = [
     cell: (row: any) => <ActionsMenu row={row} />,
     ignoreRowClick: true,
     width: "60px",
-    right: true,
   },
 ];
 
