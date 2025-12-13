@@ -1,31 +1,65 @@
 "use client";
 import DataTable from "react-data-table-component";
 import {
-  ArrowUpIcon,
   ArrowDownIcon,
-  EllipsisVerticalIcon,
   EllipsisHorizontalIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import { EllipsisHorizontalCircleIcon } from "@heroicons/react/24/solid";
-import { useSidePanel } from "../../libs/Hooks/sidePanelContext";
+import { useRouter } from "next/navigation";
 
 const customStyles = {
-  headCells: {
+  table: {
     style: {
-      fontWeight: "600",
-      fontSize: "14px",
+      backgroundColor: "transparent",
     },
   },
-  sortIcon: {
+  headRow: {
     style: {
-      height: "20px",
-      width: "20px",
-      marginLeft: "6px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      backgroundColor: "#f9fafb", // gray-50
+      borderBottomWidth: "1px",
+      borderBottomColor: "#e5e7eb", // gray-200
+      minHeight: "40px",
+    },
+  },
+  headCells: {
+    style: {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      fontWeight: "bold",
+      textTransform: "uppercase" as "uppercase",
+      letterSpacing: "0.05em", // tracking-widest
+      color: "#6b7280", // gray-500
+      paddingLeft: "16px",
+      paddingRight: "16px",
+    },
+  },
+  rows: {
+    style: {
+      fontSize: "12px",
+      fontFamily: "monospace",
+      minHeight: "56px",
+      borderBottomColor: "#f3f4f6", // gray-100
+      "&:hover": {
+        backgroundColor: "#f9fafb",
+      },
+      cursor: "pointer",
+    },
+  },
+  cells: {
+    style: {
+      paddingLeft: "16px",
+      paddingRight: "16px",
+      color: "#111827", // gray-900
+    },
+  },
+  pagination: {
+    style: {
+      borderTopWidth: "1px",
+      borderTopColor: "#e5e7eb",
+      fontSize: "11px",
+      fontFamily: "monospace",
+      color: "#6b7280",
     },
   },
 };
@@ -33,72 +67,67 @@ const customStyles = {
 const columns = [
   {
     name: "Name",
-    selector: (row) => row.customerName,
+    selector: (row: any) => row.customerName,
     sortable: true,
+    cell: (row: any) => (
+      <div className="flex flex-col py-2">
+        <span className="font-bold uppercase font-mono text-xs text-gray-900">{row.customerName}</span>
+        <span className="text-[10px] text-gray-400 font-mono">Joined: {new Date(row.createdAt).toLocaleDateString("en-IN")}</span>
+      </div>
+    ),
+    width: "200px",
   },
   {
-    name: "Email",
-    selector: (row) => row.customerEmail,
+    name: "Contact",
+    selector: (row: any) => row.customerEmail,
     sortable: true,
+    cell: (row: any) => (
+      <div className="flex flex-col">
+        <span className="font-mono text-[11px] text-gray-600 truncate max-w-[150px]">{row.customerEmail || "-"}</span>
+        <span className="text-gray-400 text-[10px] font-mono">{row.customerPhone}</span>
+      </div>
+    ),
   },
   {
     name: "Type",
-    selector: (row) => row.customerType?.typeName || "N/A",
+    selector: (row: any) => row.customerType?.typeName || "N/A",
     sortable: true,
-    cell: (row) => (
-      <span className="text-blue-600 bg-blue-100 py-1 px-2 rounded-full capitalize">
+    cell: (row: any) => (
+      <span className="font-mono text-[10px] uppercase tracking-wide text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
         {row.customerType?.typeName || "N/A"}
       </span>
     ),
   },
   {
     name: "Status",
-    selector: (row) => row.customerStatus,
+    selector: (row: any) => row.customerStatus,
     sortable: true,
-    cell: (row) => (
+    cell: (row: any) => (
       <span
-        className={`${
-          row.customerStatus === "active"
-            ? "text-green-600 bg-green-100"
-            : "text-red-600 bg-red-100"
-        } px-2 py-1 rounded-full capitalize`}
+        className={`border py-0.5 px-2 text-[10px] uppercase font-mono tracking-wide ${row.customerStatus === "active"
+          ? "border-green-200 text-green-700 bg-green-50"
+          : "border-red-200 text-red-700 bg-red-50"
+          }`}
       >
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              row.customerStatus === "active" ? "bg-green-500" : "bg-red-500"
-            }`}
-          ></div>
-          {row.customerStatus}
-        </div>
+        {row.customerStatus}
       </span>
     ),
   },
   {
-    name: "Joined On",
-    selector: (row) => {
-      const date = new Date(row.createdAt);
-      return date.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    },
-    sortable: true,
-  },
-  {
     name: "Actions",
-    cell: (row) => <ActionsMenu row={row} />,
+    cell: (row: any) => <ActionsMenu row={row} />,
     ignoreRowClick: true,
+    width: "60px",
+    right: true,
   },
 ];
 
-function ActionsMenu({ row }) {
+function ActionsMenu({ row }: { row: any }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
-  const iconRef = useRef(null);
-  const dropdownRef = useRef(null);
-  const { openSidePanel } = useSidePanel();
+  const iconRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (open && iconRef.current) {
@@ -111,11 +140,10 @@ function ActionsMenu({ row }) {
   }, [open]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      const target = event.target;
+    const handleClickOutside = (event: any) => {
       if (
-        (iconRef.current && iconRef.current.contains(target)) ||
-        (dropdownRef.current && dropdownRef.current.contains(target))
+        (iconRef.current && iconRef.current.contains(event.target)) ||
+        (dropdownRef.current && dropdownRef.current.contains(event.target))
       ) {
         return;
       }
@@ -125,41 +153,41 @@ function ActionsMenu({ row }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  function tryOpenSidePanel(rowData) {
-    try {
-      openSidePanel(rowData);
-    } catch (e) {
-      console.warn("SidePanelProvider missing:", e);
-    }
+
+
+  function handleView() {
+    router.push(`/Customers/AddCustomer?id=${row._id}&mode=view`);
+    setOpen(false);
+  }
+
+  function handleEdit() {
+    router.push(`/Customers/AddCustomer?id=${row._id}`);
+    setOpen(false);
   }
 
   const Dropdown = (
     <div
       ref={dropdownRef}
-      className="absolute w-32 text-gray-700 bg-white border border-gray-200 rounded shadow-lg z-[9999]"
+      className="fixed w-32 text-gray-700 bg-white border border-gray-200 shadow-xl z-[9999] font-mono text-xs uppercase"
       style={{
-        position: "absolute",
         top: position.top,
         left: position.left,
       }}
     >
       <button
-        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-        onClick={() => {
-          tryOpenSidePanel(row);
-          setOpen(false);
-        }}
+        className="block w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100"
+        onClick={handleView}
       >
         View
       </button>
       <button
-        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-        onClick={() => setOpen(false)}
+        className="block w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100"
+        onClick={handleEdit}
       >
         Edit
       </button>
       <button
-        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
+        className="block w-full text-left px-4 py-3 hover:bg-red-50 text-red-600"
         onClick={() => setOpen(false)}
       >
         Delete
@@ -170,7 +198,7 @@ function ActionsMenu({ row }) {
   return (
     <div className="relative inline-block" ref={iconRef}>
       <EllipsisHorizontalIcon
-        className="h-5 w-5 text-gray-500 cursor-pointer"
+        className="h-5 w-5 text-gray-400 hover:text-black cursor-pointer"
         onClick={() => setOpen((prev) => !prev)}
       />
       {open && createPortal(Dropdown, document.body)}
@@ -178,21 +206,21 @@ function ActionsMenu({ row }) {
   );
 }
 
-export default function CustomersTable({ customers }) {
+export default function CustomersTable({ customers }: { customers: any[] }) {
   return (
-    <DataTable
-      columns={columns}
-      data={customers}
-      defaultSortFieldId={1}
-      sortIcon={<ArrowDownIcon className="ml-2 h-4 w-4 text-gray-500" />}
-      // sortDirectionIcon={<ArrowUpIcon className="h-4 w-4 text-gray-500" />}
-      pagination
-      highlightOnHover
-      pointerOnHover
-      responsive
-      paginationPerPage={5}
-      paginationRowsPerPageOptions={[5, 10, 15]}
-      customStyles={customStyles}
-    />
+    <div className="border border-gray-200 overflow-x-auto w-full max-w-full">
+      <DataTable
+        columns={columns}
+        data={customers}
+        defaultSortFieldId={1}
+        sortIcon={<ArrowDownIcon className="ml-2 h-3 w-3 text-gray-400" />}
+        pagination
+        highlightOnHover
+        pointerOnHover
+        responsive
+        paginationPerPage={10}
+        customStyles={customStyles}
+      />
+    </div>
   );
 }

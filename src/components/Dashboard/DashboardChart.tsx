@@ -1,108 +1,144 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
-    LineChart,
-    Line,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { CheckIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { FireIcon } from "@heroicons/react/24/solid";
 
 export default function DashboardChart({ orders }: { orders: any[] }) {
 
-    // 1. Process Data for Chart (Mock Hourly Distribution)
-    // Since we likely don't have enough hourly resolution data in the test db, we'll keep the shape
-    // but we could try to scale the 'value' based on totalOrders/10 or something to make it look responsive.
-    const chartData = [
-        { time: "10.00 AM", value: 10 },
-        { time: "11.00 AM", value: 30 },
-        { time: "12.00 PM", value: 45 },
-        { time: "01.00 PM", value: 35 },
-        { time: "02.00 PM", value: 55 },
-        { time: "03.00 PM", value: 40 },
-    ];
+    // 1. Process Data for Hourly Chart
+    const chartData = useMemo(() => {
+        // Initialize 24 hour buckets
+        const hours = Array(24).fill(0).map((_, i) => ({ 
+            hour: i, 
+            label: `${i % 12 || 12}${i < 12 ? 'AM' : 'PM'}`, 
+            orders: 0 
+        }));
 
-    // 2. Process Data for History (Latest 3 Orders)
-    const historyData = orders.slice(0, 3).map(order => ({
-        id: order.orderId || (order._id ? order._id.slice(-6).toUpperCase() : "N/A"),
-        time: order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Recently",
-        amount: order.totalAmount ? `₹${order.totalAmount}` : "₹0",
-        status: order.status || "Pending"
-    }));
+        orders.forEach(order => {
+            if (order.createdAt) {
+                const date = new Date(order.createdAt);
+                // Simple filter: Only count orders from "Today" to make the chart meaningful for a daily view
+                // OR count all if dataset is small. Let's do all for now to ensure data shows up.
+                const h = date.getHours();
+                if (hours[h]) hours[h].orders += 1;
+            }
+        });
+
+        // Filter to only show relevant range (e.g. 6AM to 10PM) or just the whole day
+        // Let's simplified to 6am - 9pm for better visual density
+        return hours.slice(6, 22);
+    }, [orders]);
+
+    // 2. Recent Transactions / Best Selling (Mock logic for best selling)
+    // We can count product occurrences
+    const topProducts = useMemo(() => {
+        const productCounts: Record<string, number> = {};
+        orders.forEach(o => {
+            (o.items || []).forEach((i: any) => {
+                const name = i.name || i.productName || "Unknown";
+                productCounts[name] = (productCounts[name] || 0) + (i.quantity || 1);
+            });
+        });
+        return Object.entries(productCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 4)
+            .map(([name, count]) => ({ name, count }));
+    }, [orders]);
+
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
-            {/* Left: Today Transaction Chart */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-6">Today Transaction</h3>
+            {/* Scale Area Chart */}
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-50">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 className="font-bold text-gray-800 text-lg">Sales Overview</h3>
+                        <p className="text-gray-400 text-xs mt-1">Hourly order distribution</p>
+                    </div>
+                    
+                </div>
 
-                <div className="h-[250px] w-full">
+                <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
+                        <AreaChart data={chartData}>
+                            <defs>
+                                <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                             <XAxis
-                                dataKey="time"
+                                dataKey="label"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#9ca3af', fontSize: 10 }}
+                                tick={{ fill: '#9ca3af', fontSize: 11 }}
                                 dy={10}
                             />
                             <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#9ca3af', fontSize: 10 }}
+                                tick={{ fill: '#9ca3af', fontSize: 11 }}
                             />
                             <Tooltip
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '5 5' }}
                             />
-                            <Line
+                            <Area
                                 type="monotone"
-                                dataKey="value"
-                                stroke="#10b981" // Emerald Green
+                                dataKey="orders"
+                                stroke="#10b981"
                                 strokeWidth={3}
-                                dot={{ r: 4, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
-                                activeDot={{ r: 6 }}
+                                fillOpacity={1}
+                                fill="url(#colorOrders)"
                             />
-                        </LineChart>
+                        </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Right: Transaction History */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                <h3 className="font-bold text-gray-900 mb-6">Transaction History</h3>
+            {/* Top Products / Sidebar */}
+            <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-50 flex flex-col">
+                <div className="flex items-center gap-2 mb-6">
+                    <FireIcon className="w-5 h-5 text-orange-500" />
+                    <h3 className="font-bold text-gray-800 text-lg">Top Selling</h3>
+                </div>
 
                 <div className="flex-1 space-y-6">
-                    {historyData.length > 0 ? historyData.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                                <CheckIcon className="w-4 h-4 text-[#10b981]" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-semibold text-gray-900">Order {item.id}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{item.time}</p>
+                    {topProducts.length > 0 ? topProducts.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between group cursor-pointer">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 font-bold flex items-center justify-center text-sm group-hover:bg-[#10b981] group-hover:text-white transition-colors duration-300">
+                                    {idx + 1}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-800 group-hover:text-[#10b981] transition-colors">{item.name}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5">High demand</p>
+                                </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-bold text-gray-900">{item.amount}</p>
-                                <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium block mt-1 w-fit ml-auto">
-                                    {item.status}
-                                </span>
+                                <p className="text-sm font-bold text-gray-900">{item.count}</p>
+                                <span className="text-[10px] text-gray-400">Sold</span>
                             </div>
                         </div>
                     )) : (
-                        <p className="text-sm text-gray-400 text-center py-4">No recent transactions</p>
+                        <div className="text-center text-gray-400 text-sm mt-10">
+                            No sales data yet.
+                        </div>
                     )}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-50 text-center">
-                    <button className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center justify-center gap-1 mx-auto">
-                        View All Transaction
-                        <ChevronDownIcon className="w-4 h-4" />
-                    </button>
-                </div>
+                <button className="mt-auto w-full py-3 rounded-xl bg-gray-50 text-gray-600 text-sm font-bold hover:bg-[#10b981] hover:text-white transition-colors">
+                    View All Products
+                </button>
             </div>
 
         </div>
