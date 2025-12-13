@@ -1,27 +1,29 @@
 "use client";
 
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { CategoryManagementUrl } from "@/src/libs/utils/API/endpoints";
 import {
-  Square2StackIcon,
-  Square3Stack3DIcon,
-  Squares2X2Icon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
   PlusCircleIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
-import StatCard from "@/src/components/statcard";
 import { useRouter } from "next/navigation";
 import CategoriesTable from "@/src/components/Categories/CategoriesTable";
 
 export default function CategoriesDetails() {
   const router = useRouter();
 
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [catStats, setCatStats] = useState({
     totalCategories: 0,
     activeCategories: 0,
     inactiveCategories: 0,
   });
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchCategories = async () => {
     try {
@@ -33,9 +35,7 @@ export default function CategoriesDetails() {
       });
       if (!res.ok) throw new Error(`Error! status: ${res.status}`);
       const json = await res.json();
-      console.log("API Response:", json);
-      
-      // Handle different response formats
+
       let data = [];
       if (Array.isArray(json)) {
         data = json;
@@ -44,8 +44,7 @@ export default function CategoriesDetails() {
       } else if (json.data && Array.isArray(json.data)) {
         data = json.data;
       }
-      
-      // Map API fields to component fields
+
       const mappedData = data.map((item: any) => ({
         id: item._id,
         name: item.categoryName,
@@ -53,8 +52,7 @@ export default function CategoriesDetails() {
         status: item.categoryStatus,
         image: item.categoryImage,
       }));
-      
-      console.log("Setting categories:", mappedData);
+
       setCategories(mappedData);
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -74,14 +72,11 @@ export default function CategoriesDetails() {
       );
       if (response.ok) {
         const data = await response.json();
-        console.log("Category Stats Data:", data);
         setCatStats({
           totalCategories: data.totalCategories || 0,
           activeCategories: data.activeCategories || 0,
           inactiveCategories: data.inactiveCategories || 0,
         });
-      } else {
-        const errorData = await response.json();
       }
     } catch (error) {
       console.error("Error fetching category stats:", error);
@@ -94,52 +89,97 @@ export default function CategoriesDetails() {
     fetchCatStats();
   }, []);
 
+  const filteredCategories = useMemo(() => {
+    return categories.filter((category) => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = (category.name?.toLowerCase() || "").includes(searchLower);
+
+      let matchesStatus = true;
+      if (statusFilter !== "all") {
+        matchesStatus = category.status === statusFilter;
+      }
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [categories, searchQuery, statusFilter]);
+
+  const stats = [
+    { label: "TOTAL CATEGORIES", value: catStats.totalCategories },
+    { label: "ACTIVE", value: catStats.activeCategories },
+    { label: "INACTIVE", value: catStats.inactiveCategories },
+  ];
+
   return (
-    <>
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-          Categories Dashboard
-        </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Categories"
-            value={catStats.totalCategories}
-            color="bg-[#007e5d]"
-            icon={<Square2StackIcon className="h-6 w-6 text-white" />}
-          />
-          <StatCard
-            title="Active Categories"
-            value={catStats.activeCategories}
-            color="bg-green-500"
-            icon={<Square3Stack3DIcon className="h-6 w-6 text-white" />}
-          />
-          <StatCard
-            title="Inactive Categories"
-            value={catStats.inactiveCategories}
-            color="bg-red-500"
-            icon={<Squares2X2Icon className="h-6 w-6 text-white" />}
-          />
+    <div className="min-h-screen bg-white p-6 md:p-8 font-mono text-gray-900">
+      {/* Stats Bar */}
+      <div className="flex items-center gap-8 py-4 border-b border-gray-200 mb-8 overflow-x-auto">
+        {stats.map((stat, index) => (
+          <div key={index} className="flex-shrink-0">
+            <div className="text-xs text-gray-400 tracking-widest">{stat.label}</div>
+            <div className="text-xl font-bold text-gray-900 mt-0.5">{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="mb-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold uppercase tracking-widest text-[#10b981]">
+            Categories Dashboard
+          </h1>
+          <p className="text-xs text-gray-400 mt-1">Manage Product Categories</p>
         </div>
 
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Categories List
-            </h2>
-            <button
-              className="bg-[#007e5d] text-white p-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center cursor-pointer"
-              onClick={() => {
-                router.push("/Categories/AddCategory");
-              }}
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+          {/* Search Bar */}
+          <div className="relative group">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+            <input
+              type="text"
+              placeholder="SEARCH CATEGORIES..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-gray-200 text-xs w-full md:w-64 focus:outline-none focus:border-black transition-colors uppercase placeholder-gray-300"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="relative">
+            <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="pl-9 pr-8 py-2 border border-gray-200 text-xs w-full md:w-40 focus:outline-none focus:border-black appearance-none bg-transparent uppercase cursor-pointer"
             >
-              <PlusCircleIcon className="h-5 w-5 inline-block mr-2" />
+              <option value="all">Status: All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div className="flex gap-2">
+            <button className="border border-gray-200 hover:border-black text-xs px-4 py-2 uppercase tracking-widest flex items-center gap-2 transition-colors">
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Import
+            </button>
+            <button className="border border-gray-200 hover:border-black text-xs px-4 py-2 uppercase tracking-widest flex items-center gap-2 transition-colors">
+              <ArrowUpTrayIcon className="w-4 h-4" />
+              Export
+            </button>
+            <button
+              onClick={() => router.push("/Categories/AddCategory")}
+              className="bg-black text-white hover:bg-[#10b981] text-xs px-4 py-2 uppercase tracking-widest flex items-center gap-2 transition-colors"
+            >
+              <PlusCircleIcon className="w-4 h-4" />
               Add Category
             </button>
           </div>
         </div>
-
-        <CategoriesTable categories={categories} />
       </div>
-    </>
+
+      <div className="border border-gray-200 rounded-none p-0">
+        <CategoriesTable categories={filteredCategories} />
+      </div>
+    </div>
   );
 }

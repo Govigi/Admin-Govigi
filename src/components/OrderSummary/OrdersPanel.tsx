@@ -10,6 +10,9 @@ interface OrdersPanelProps {
     loading: boolean;
     dateFilter: string;
     onOrderUpdate?: () => void;
+    selectedOrders?: any[];
+    onSelectionChange?: (selected: any[]) => void;
+    selectionEnabled?: boolean;
 }
 
 const getStatusStyle = (status: string) => {
@@ -31,7 +34,15 @@ const getStatusStyle = (status: string) => {
     }
 };
 
-export default function OrdersPanel({ orders, loading, dateFilter, onOrderUpdate }: OrdersPanelProps) {
+export default function OrdersPanel({
+    orders,
+    loading,
+    dateFilter,
+    onOrderUpdate,
+    selectedOrders = [],
+    onSelectionChange,
+    selectionEnabled = false
+}: OrdersPanelProps) {
     const router = useRouter();
 
     const filteredOrders = useMemo(() => {
@@ -40,6 +51,26 @@ export default function OrdersPanel({ orders, loading, dateFilter, onOrderUpdate
 
     const handleOrderClick = (order: any) => {
         router.push(`/Ordersummary/${order.id}`);
+    };
+
+    const toggleSelectAll = () => {
+        if (!onSelectionChange) return;
+        if (selectedOrders.length === filteredOrders.length) {
+            onSelectionChange([]);
+        } else {
+            onSelectionChange([...filteredOrders]);
+        }
+    };
+
+    const toggleSelection = (e: React.MouseEvent, order: any) => {
+        e.stopPropagation();
+        if (!onSelectionChange) return;
+        const isSelected = selectedOrders.some(o => o.id === order.id);
+        if (isSelected) {
+            onSelectionChange(selectedOrders.filter(o => o.id !== order.id));
+        } else {
+            onSelectionChange([...selectedOrders, order]);
+        }
     };
 
     if (loading) {
@@ -55,12 +86,14 @@ export default function OrdersPanel({ orders, loading, dateFilter, onOrderUpdate
     return (
         <div className="h-full flex flex-col">
             <div className="border-b border-gray-200 pb-3 mb-4 flex justify-between items-end">
-                <div>
-                    <h3 className="font-mono text-xs uppercase tracking-widest text-gray-500">
-                        Orders
-                    </h3>
-                    <div className="font-mono text-2xl font-bold mt-1">
-                        {filteredOrders.length}
+                <div className="flex items-center gap-2">
+                    <div>
+                        <h3 className="font-mono text-xs uppercase tracking-widest text-gray-500">
+                            Orders
+                        </h3>
+                        <div className="font-mono text-2xl font-bold mt-1">
+                            {filteredOrders.length}
+                        </div>
                     </div>
                 </div>
                 <div className="text-right">
@@ -77,43 +110,56 @@ export default function OrdersPanel({ orders, loading, dateFilter, onOrderUpdate
                         NO ORDERS FOUND
                     </div>
                 ) : (
-                    filteredOrders.map((order) => (
-                        <div
-                            key={order.id}
-                            onClick={() => handleOrderClick(order)}
-                            className="bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-400 cursor-pointer transition-colors group"
-                        >
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <div className="font-mono text-sm font-bold text-gray-900">
-                                        {order.customer}
+                    filteredOrders.map((order) => {
+                        const isSelected = selectedOrders.some(o => o.id === order.id);
+                        return (
+                            <div
+                                key={order.id}
+                                onClick={() => handleOrderClick(order)}
+                                className={`bg-white border rounded-lg p-3 cursor-pointer transition-colors group ${isSelected ? "border-black ring-1 ring-black" : "border-gray-200 hover:border-gray-400"
+                                    }`}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 min-w-0 flex-1 overflow-hidden">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-mono text-sm font-bold text-gray-900 truncate" title={order.customer}>
+                                                {order.customer}
+                                            </div>
+                                            <div className="font-mono text-xs text-gray-500 mt-0.5 truncate">
+                                                #{order.orderId}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="font-mono text-xs text-gray-500 mt-0.5">
-                                        #{order.orderId}
+                                    <div className="text-right shrink-0">
+                                        <div className="font-mono text-sm font-bold">
+                                            ₹{order.totalAmount?.toLocaleString("en-IN")}
+                                        </div>
+                                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-mono rounded border ${getStatusStyle(order.status)}`}>
+                                            {order.status?.toUpperCase() || "PENDING"}
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="font-mono text-sm font-bold">
-                                        ₹{order.totalAmount?.toLocaleString("en-IN")}
-                                    </div>
-                                    <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-mono rounded border ${getStatusStyle(order.status)}`}>
-                                        {order.status?.toUpperCase() || "PENDING"}
-                                    </span>
-                                </div>
-                            </div>
 
-                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                                <div className="font-mono text-xs text-gray-400">
-                                    {order.products?.length || 0} items
-                                </div>
-                                {order.deliverySlot && (
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 ml-7">
                                     <div className="font-mono text-xs text-gray-400">
-                                        {order.deliverySlot}
+                                        {order.products?.length || 0} items
                                     </div>
-                                )}
+                                    <div className="flex items-center gap-2">
+                                        {order.sourcingStatus && order.sourcingStatus !== "Pending" && (
+                                            <span className="text-[10px] font-bold uppercase text-blue-600 bg-blue-50 px-1 border border-blue-200">
+                                                {order.sourcingStatus}
+                                            </span>
+                                        )}
+                                        {order.deliverySlot && (
+                                            <div className="font-mono text-xs text-gray-400">
+                                                {order.deliverySlot}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>

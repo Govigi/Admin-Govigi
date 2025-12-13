@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { AdminUrl } from "@/src/libs/utils/API/endpoints";
-import PathShower from "@/src/components/pathShower";
 
 interface TimeSlot {
     start: string;
@@ -93,11 +92,6 @@ export default function SchedulingPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            <PathShower
-                pathList={[
-                    ["scheduling", "Scheduling Settings"],
-                ]}
-            />
             <div className="p-8">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-gray-800">Scheduling Settings</h1>

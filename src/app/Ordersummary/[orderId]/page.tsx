@@ -250,8 +250,8 @@ export default function OrderDetailsPage() {
             <div className="min-h-screen bg-gray-50 font-mono text-gray-900 pb-12 selection:bg-black selection:text-white print:hidden">
                 {/* Top Navigation & Actions Bar */}
                 <div className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                    <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:h-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
                             <button
                                 onClick={() => router.back()}
                                 className="p-2 -ml-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
@@ -265,21 +265,22 @@ export default function OrderDetailsPage() {
                         </div>
 
                         {/* Top Action Area: Status Selectors & Save */}
-                        <div className="flex items-center gap-3">
-                            <div className="hidden md:flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 mt-4 md:mt-0 w-full md:w-auto">
+                            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200 order-2 md:order-1">
                                 <select
                                     value={statusBuffer.status}
                                     onChange={(e) => handleStatusChange('status', e.target.value)}
-                                    className="bg-transparent text-xs font-bold uppercase tracking-wider py-1.5 pl-3 pr-8 rounded-md focus:ring-0 border-none cursor-pointer hover:bg-white transition-colors"
+                                    className="bg-transparent text-xs font-bold uppercase tracking-wider py-2 md:py-1.5 pl-3 pr-8 rounded-md focus:ring-0 border-none cursor-pointer hover:bg-white transition-colors w-full md:w-auto"
                                 >
                                     {ORDER_STEPS.map(s => <option key={s} value={s}>{s}</option>)}
                                     <option value={CANCELLED_STEP}>Cancelled</option>
                                 </select>
-                                <div className="w-px h-4 bg-gray-300"></div>
+                                <div className="hidden md:block w-px h-4 bg-gray-300"></div>
+                                <div className="md:hidden h-px w-full bg-gray-200"></div>
                                 <select
                                     value={statusBuffer.paymentStatus}
                                     onChange={(e) => handleStatusChange('paymentStatus', e.target.value)}
-                                    className={`bg-transparent text-xs font-bold uppercase tracking-wider py-1.5 pl-3 pr-8 rounded-md focus:ring-0 border-none cursor-pointer hover:bg-white transition-colors ${statusBuffer.paymentStatus === "Paid" ? "text-green-700" : "text-gray-900"
+                                    className={`bg-transparent text-xs font-bold uppercase tracking-wider py-2 md:py-1.5 pl-3 pr-8 rounded-md focus:ring-0 border-none cursor-pointer hover:bg-white transition-colors w-full md:w-auto ${statusBuffer.paymentStatus === "Paid" ? "text-green-700" : "text-gray-900"
                                         }`}
                                 >
                                     <option value="Pending">Payment: Pending</option>
@@ -287,24 +288,26 @@ export default function OrderDetailsPage() {
                                 </select>
                             </div>
 
-                            <button
-                                onClick={handleSaveChanges}
-                                disabled={!hasChanges || updating}
-                                className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${hasChanges
+                            <div className="flex items-center gap-2 order-1 md:order-2">
+                                <button
+                                    onClick={handleSaveChanges}
+                                    disabled={!hasChanges || updating}
+                                    className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${hasChanges
                                         ? "bg-black text-white hover:bg-gray-800 shadow-md transform active:scale-95"
                                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                    }`}
-                            >
-                                {updating ? "Saving..." : "Save Changes"}
-                            </button>
+                                        }`}
+                                >
+                                    {updating ? "Saving..." : "Save Changes"}
+                                </button>
 
-                            <button
-                                onClick={handlePrint}
-                                className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-colors border border-transparent hover:border-gray-200"
-                                title="Print Order"
-                            >
-                                <PrinterIcon className="w-5 h-5" />
-                            </button>
+                                <button
+                                    onClick={handlePrint}
+                                    className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-colors border border-transparent hover:border-gray-200"
+                                    title="Print Order"
+                                >
+                                    <PrinterIcon className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -331,10 +334,10 @@ export default function OrderDetailsPage() {
                                     return (
                                         <div key={step} className="relative z-10 flex flex-col items-center bg-white px-4">
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${isCompleted
-                                                    ? "bg-green-500 border-green-500 text-white"
-                                                    : isActive
-                                                        ? "bg-black border-black text-white"
-                                                        : "bg-white border-gray-300 text-gray-400"
+                                                ? "bg-green-500 border-green-500 text-white"
+                                                : isActive
+                                                    ? "bg-black border-black text-white"
+                                                    : "bg-white border-gray-300 text-gray-400"
                                                 }`}>
                                                 {isCompleted ? (
                                                     <CheckIcon className="w-4 h-4 stroke-[3]" />
