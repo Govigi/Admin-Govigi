@@ -8,7 +8,11 @@ import {
   BellIcon,
   InformationCircleIcon,
   UserIcon,
+  Bars3Icon,
 } from "@heroicons/react/24/outline";
+
+import Breadcrumbs from "./Global/Breadcrumbs";
+import { useUI } from "../libs/Hooks/UIContext";
 
 export default function TopBar() {
   const [showPopup, setShowPopup] = useState(false);
@@ -38,12 +42,30 @@ export default function TopBar() {
     router.push("/login");
   };
 
+  const { toggleMobileMenu } = useUI();
+
   return (
-    <header className="relative h-16 border-b border-gray-200 bg-white px-6 py-4 text-gray-800">
-      <div className="flex items-center justify-end gap-7 mr-12">
+    <header className="relative h-16 border-b border-gray-200 bg-white px-4 md:px-6 py-4 text-gray-800 flex items-center justify-between">
+      {/* Left Side: Hamburger & Breadcrumbs */}
+      <div className="flex items-center gap-3 md:gap-0 overflow-hidden">
+        {/* Hamburger Menu (Mobile Only) */}
+        <button
+          onClick={toggleMobileMenu}
+          className="md:hidden p-1 text-gray-500 hover:text-gray-700"
+        >
+          <Bars3Icon className="h-6 w-6" />
+        </button>
+
+        <div className="overflow-hidden">
+          <Breadcrumbs />
+        </div>
+      </div>
+
+      {/* Right Side: Icons */}
+      <div className="flex items-center justify-end gap-3 md:gap-7 md:mr-12 shrink-0">
         <button
           aria-label="Settings"
-          className="hover:text-blue-600 transition-colors"
+          className="hover:text-blue-600 transition-colors hidden md:block" // Hidden on small mobile to save space if needed, or keep
         >
           <Cog6ToothIcon className="h-6 w-6" />
         </button>
@@ -57,7 +79,7 @@ export default function TopBar() {
 
         <button
           aria-label="Information"
-          className="hover:text-blue-600 transition-colors"
+          className="hover:text-blue-600 transition-colors hidden md:block"
         >
           <InformationCircleIcon className="h-6 w-6" />
         </button>
@@ -83,6 +105,6 @@ export default function TopBar() {
           )}
         </div>
       </div>
-    </header>
+    </header >
   );
 }

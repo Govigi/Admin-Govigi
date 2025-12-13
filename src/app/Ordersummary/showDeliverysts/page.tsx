@@ -1,5 +1,4 @@
 import React from "react";
-import PathShower from "@/src/components/pathShower";
 import DeliveryReport from "./deliverydetails";
 const PathList = [
   ["Ordersummary", "Order Summary"],
@@ -8,7 +7,6 @@ const PathList = [
 export default function DeliveryUpdates() {
   return (
     <div>
-      <PathShower pathList={PathList} />
       <DeliveryReport />
     </div>
   );

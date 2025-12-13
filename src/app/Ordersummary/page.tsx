@@ -8,6 +8,7 @@ import { OrderSummaryUrl } from "../../libs/utils/API/endpoints";
 import { PrinterIcon, CalendarIcon } from "@heroicons/react/24/outline";
 
 export default function OrdersPage() {
+    const [generatedDate, setGeneratedDate] = useState("");
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -23,8 +24,17 @@ export default function OrdersPage() {
     const [dateFilter, setDateFilter] = useState(getTodayDate());
 
     useEffect(() => {
+        setGeneratedDate(new Date().toLocaleString());
+    }, []);
+
+    // ... existing code ...
+
+    useEffect(() => {
         fetchOrders();
     }, [dateFilter]);
+
+    // ... existing code ...
+
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -105,7 +115,7 @@ export default function OrdersPage() {
 
 
     return (
-        <div className="min-h-screen bg-white p-6 md:p-8 font-mono text-gray-900">
+        <div className="min-h-screen bg-white p-2 md:p-8 font-mono text-gray-900 overflow-x-hidden">
             <div className="print:hidden flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-gray-200">
                 <div>
                     <h1 className="text-xl font-bold uppercase tracking-widest">Order Summary</h1>
@@ -138,7 +148,7 @@ export default function OrdersPage() {
                     Order Summary - {formatDateDisplay(dateFilter)}
                 </h1>
                 <p className="text-xs text-gray-500 mt-1">
-                    Generated: {new Date().toLocaleString()}
+                    Generated: {generatedDate}
                 </p>
             </div>
 

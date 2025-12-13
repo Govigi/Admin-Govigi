@@ -9,6 +9,7 @@ export const OrderSummaryUrl = {
   getAllProducts: backend_url + "/getAllProducts",
   createProduct: backend_url + "/createProduct",
   updateProduct: backend_url + "/updateProduct",
+  bulkUpdateProducts: backend_url + "/bulkUpdateProducts",
   deleteProduct: backend_url + "/deleteProduct",
   updateorderStatus: (id) => `${backend_url}/updateStatus/${id}`,
   updatePaymentStatus: (id) => `${backend_url}/updatePaymentStatus/${id}`,
@@ -23,6 +24,7 @@ export const ProductManagementUrl = {
 
 export const CategoryManagementUrl = {
   createCategory: backend_url + "/createCategory",
+  updateCategory: backend_url + "/updateCategory", // /:id
   getAllCategoriesStats: backend_url + "/getAllCategoriesStats",
   getAllCategories: backend_url + "/getAllCategories",
 };
@@ -36,6 +38,8 @@ export const CustomerDashboardUrl = {
 
 export const CustomerManagementUrl = {
   createCustomer: backend_url + "/createCustomer",
+  updateCustomer: backend_url + "/updateCustomer", // /:id
+  getCustomerById: backend_url + "/getCustomer", // /:id
 };
 
 export const CustomerTypesUrl = {
@@ -70,4 +74,18 @@ export const AdminUrl = {
   // Settings
   getSettings: backend_url + "/admin/settings/{key}",
   updateSettings: backend_url + "/admin/settings",
+};
+
+
+export const VendorUrl = {
+  createVendor: backend_url + "/vendors/create",
+  getAllVendors: backend_url + "/vendors/getAll",
+  getVendorById: backend_url + "/vendors/get", // /:id
+  updateVendor: backend_url + "/vendors/update", // /:id
+  deleteVendor: backend_url + "/vendors/delete", // /:id
+};
+
+export const SourcingUrl = {
+  getNearbyVendors: backend_url + "/sourcing/vendors",
+  assignOrders: backend_url + "/sourcing/assign",
 };

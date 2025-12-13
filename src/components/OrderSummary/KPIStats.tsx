@@ -30,11 +30,11 @@ export default function KPIStats({ orders }: KPIStatsProps) {
     ];
 
     return (
-        <div className="flex items-center gap-8 py-4 border-b border-gray-200 mb-6 overflow-x-auto font-mono">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-4 md:gap-8 py-4 border-b border-gray-200 mb-6 font-mono">
             {stats.map((stat, index) => (
-                <div key={index} className="flex-shrink-0">
-                    <div className="text-xs text-gray-400 tracking-widest">{stat.label}</div>
-                    <div className="text-xl font-bold text-gray-900 mt-0.5">{stat.value}</div>
+                <div key={index} className="flex-shrink-0 p-2 md:p-0 bg-gray-50 md:bg-transparent rounded-lg md:rounded-none border md:border-none border-gray-100">
+                    <div className="text-[10px] md:text-xs text-gray-400 tracking-widest uppercase">{stat.label}</div>
+                    <div className="text-lg md:text-xl font-bold text-gray-900 mt-0.5 truncate">{stat.value}</div>
                 </div>
             ))}
         </div>

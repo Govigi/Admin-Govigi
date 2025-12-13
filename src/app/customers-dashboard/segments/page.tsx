@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import PathShower from "@/src/components/pathShower";
 import { PlusIcon, TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { AdminUrl, CustomerTypesUrl } from "@/src/libs/utils/API/endpoints";
 import axios from "axios";
@@ -96,12 +95,6 @@ export default function CustomerSegments() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            <PathShower
-                pathList={[
-                    ["customers-dashboard", "Customers"],
-                    ["segments", "Segments & Types"],
-                ]}
-            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
                 <div className="flex items-center justify-between mb-6">

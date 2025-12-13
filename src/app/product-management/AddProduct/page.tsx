@@ -1,15 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ArrowLeftIcon,
   ShoppingBagIcon,
   ArrowUpTrayIcon,
   XMarkIcon,
+  PlusCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { OrderSummaryUrl } from "../../../libs/utils/API/endpoints";
+import { useRouter, useSearchParams } from "next/navigation";
+import { OrderSummaryUrl, CategoryManagementUrl } from "../../../libs/utils/API/endpoints";
+import { useLoading } from "@/src/libs/Hooks/LoadingContext";
 
 interface ImageData {
   file: File;
@@ -20,17 +21,83 @@ interface ImageData {
 
 export default function AddProduct() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  const mode = searchParams.get("mode");
+  const isEditMode = !!id;
+  const isViewMode = mode === "view";
+
+  // Mock loader for now since context might not be fully available in this snippet scope, 
+  // but assuming it exists based on previous files.
+  const { showLoader, hideLoader } = useLoading ? useLoading() : { showLoader: () => { }, hideLoader: () => { } };
 
   const [formData, setFormData] = useState({
     name: "",
     category: "",
     pricePerKg: "",
     stock: "",
+    unit: "kg",
     status: "active",
     image: null as File | null,
+    imageUrl: "", // For existing image URL
   });
 
+  const [categories, setCategories] = useState<any[]>([]);
   const [image, setImage] = useState<ImageData | null>(null);
+
+  useEffect(() => {
+    fetchCategories();
+    if (id) {
+      fetchProductDetails(id);
+    }
+  }, [id]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(CategoryManagementUrl.getAllCategories);
+      if (res.ok) {
+        const data = await res.json();
+        const catList = Array.isArray(data) ? data : (data.categories || []);
+        setCategories(catList);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const fetchProductDetails = async (productId: string) => {
+    try {
+      showLoader("Loading details...");
+      const res = await fetch(OrderSummaryUrl.getAllProducts);
+      const data = await res.json();
+      const product = data.products.find((p: any) => p._id === productId);
+
+      if (product) {
+        setFormData({
+          name: product.name || "",
+          category: product.category?._id || product.category || "",
+          pricePerKg: product.pricePerKg || "",
+          stock: product.stock || "",
+          unit: product.unit || "kg",
+          status: product.status || "active",
+          image: null,
+          imageUrl: product.image?.url || "",
+        });
+        if (product.image?.url) {
+          setImage({
+            file: new File([], "existing_image"), // Dummy
+            url: product.image.url,
+            name: "Existing Image",
+          });
+        }
+      }
+
+    } catch (err) {
+      console.error("Error fetching product", err);
+    } finally {
+      hideLoader();
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,11 +114,12 @@ export default function AddProduct() {
 
   const removeImage = () => {
     setImage(null);
-    setFormData({ ...formData, image: null });
+    setFormData({ ...formData, image: null, imageUrl: "" });
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    if (isViewMode) return;
     const file = e.dataTransfer.files?.[0];
     if (file) {
       setImage({
@@ -66,6 +134,7 @@ export default function AddProduct() {
 
   const handleSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    showLoader(isEditMode ? "Updating Product..." : "Adding Product...");
 
     const payload = new FormData();
     payload.append("name", formData.name);
@@ -73,164 +142,227 @@ export default function AddProduct() {
     payload.append("pricePerKg", formData.pricePerKg);
     payload.append("stock", formData.stock);
     payload.append("status", formData.status);
+    payload.append("unit", formData.unit);
+
     if (formData.image) {
       payload.append("image", formData.image);
     }
 
-    fetch(OrderSummaryUrl.createProduct, {
-      method: "POST",
+    const url = isEditMode
+      ? `${OrderSummaryUrl.updateProduct}/${id}`
+      : OrderSummaryUrl.createProduct;
+
+    const method = isEditMode ? "PATCH" : "POST";
+
+    fetch(url, {
+      method: method,
       body: payload,
     })
       .then((response) => {
         if (response.ok) {
-          console.log("Product added successfully");
+          console.log("Product saved successfully");
           router.push("/product-management");
         } else {
-          console.error("Error adding product");
+          console.error("Error saving product");
         }
       })
       .catch((error) => {
         console.error("Network error:", error);
+      })
+      .finally(() => {
+        hideLoader();
       });
   };
 
-  return (
-    <div className="p-6 mx-auto">
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="h-9 w-9 border border-gray-300 rounded-md flex items-center justify-center hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
-          </button>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Add New Product
-          </h1>
-        </div>
-        <button
-          onClick={handleSubmit}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm"
-        >
-          <ShoppingBagIcon className="h-5 w-5" />
-          Add Product
-        </button>
-      </div>
+  const InputField = ({ label, value, onChange, placeholder, type = "text", disabled = false }: any) => (
+    <div className="mb-4">
+      <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        disabled={disabled || isViewMode}
+        placeholder={isViewMode ? "" : placeholder}
+        className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors placeholder-gray-300 font-mono ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
+      />
+    </div>
+  );
 
-      <form className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-2 space-y-8">
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-              <div className="h-5 w-1.5 bg-green-600 rounded-full"></div>
-              Product Details
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Name
-                </label>
-                <input
-                  type="text"
+  const SelectField = ({ label, value, onChange, options, disabled = false }: any) => (
+    <div className="mb-4">
+      <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled || isViewMode}
+        className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors font-mono uppercase ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
+      >
+        <option value="">-- Select --</option>
+        {options.map((opt: any) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-white p-4 md:p-8 font-mono text-gray-900">
+      <div className="w-full max-w-7xl mx-auto">
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 border-b border-gray-200 pb-6 gap-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="p-2 border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              <ArrowLeftIcon className="h-4 w-4 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold uppercase tracking-widest text-black">
+                {isViewMode ? "Product Details" : isEditMode ? "Edit Product" : "Add Product"}
+              </h1>
+              <p className="text-xs text-gray-400 mt-1">
+                {isViewMode ? "View product info" : "Enter product information"}
+              </p>
+            </div>
+          </div>
+
+          {!isViewMode && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 w-full md:w-auto">
+              <div className="flex flex-col items-start sm:items-end w-full sm:w-auto">
+                <span className="text-[10px] uppercase text-gray-400 font-mono mb-1 tracking-wider">Status</span>
+                <div className="flex items-center border border-gray-900 bg-white w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, status: "active" }))}
+                    className={`flex-1 sm:flex-none px-6 py-2 text-xs uppercase tracking-widest font-bold transition-all ${formData.status === "active"
+                      ? "bg-[#10b981] text-white"
+                      : "bg-white text-gray-400 hover:text-black hover:bg-gray-50"
+                      }`}
+                  >
+                    Active
+                  </button>
+                  <div className="w-[1px] h-full bg-gray-900"></div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, status: "inactive" }))}
+                    className={`flex-1 sm:flex-none px-6 py-2 text-xs uppercase tracking-widest font-bold transition-all ${formData.status === "inactive"
+                      ? "bg-red-500 text-white"
+                      : "bg-white text-gray-400 hover:text-black hover:bg-gray-50"
+                      }`}
+                  >
+                    Inactive
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                className="bg-black text-white px-8 py-3 text-xs uppercase tracking-widest hover:bg-[#10b981] transition-colors h-[42px] self-end sm:self-auto w-full sm:w-auto"
+              >
+                {isEditMode ? "Save Changes" : "Create Product"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <form className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="md:col-span-2 space-y-12">
+            {/* General Info */}
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-[#10b981] mb-6 border-l-4 border-[#10b981] pl-3">
+                01. General Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
+                <InputField
+                  label="Product Name"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                  placeholder="Enter product name"
+                  onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="ENTER NAME"
+                />
+                {/* Categories should ideally come from API, hardcoding for now based on previous file */}
+                <SelectField
+                  label="Category"
+                  value={formData.category}
+                  onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
+                  options={categories.map((cat: any) => ({
+                    value: cat.categoryName,
+                    label: cat.categoryName.toUpperCase()
+                  }))}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                >
-                  <option value="">Select category</option>
-                  <option value="fruits">Fruits</option>
-                  <option value="vegetables">Vegetables</option>
-                </select>
-              </div>
             </div>
-          </section>
 
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-              <div className="h-5 w-1.5 bg-green-600 rounded-full"></div>
-              Pricing & Stock
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price per Kg
-                </label>
-                <input
+            {/* Pricing & Stock */}
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-[#10b981] mb-6 border-l-4 border-[#10b981] pl-3">
+                02. Pricing & Stock
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-2">
+                <InputField
+                  label="Price"
                   type="number"
                   value={formData.pricePerKg}
-                  onChange={(e) =>
-                    setFormData({ ...formData, pricePerKg: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                  placeholder="Enter price per Kg"
-                  min="15"
+                  onChange={(e: any) => setFormData({ ...formData, pricePerKg: e.target.value })}
+                  placeholder="0.00"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Stock (in Kg)
-                </label>
-                <input
-                  type="text"
+                <SelectField
+                  label="Unit"
+                  value={formData.unit}
+                  onChange={(e: any) => setFormData({ ...formData, unit: e.target.value })}
+                  options={[
+                    { value: "kg", label: "Kg" },
+                    { value: "g", label: "Gram" },
+                    { value: "pcs", label: "Pieces" },
+                    { value: "pack", label: "Pack" },
+                    { value: "ltr", label: "Liter" },
+                  ]}
+                />
+                <InputField
+                  label="Stock Quantity"
                   value={formData.stock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, stock: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-                  placeholder="Enter stock quantity"
+                  onChange={(e: any) => setFormData({ ...formData, stock: e.target.value })}
+                  placeholder="0"
                 />
               </div>
             </div>
-          </section>
-        </div>
+          </div>
 
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-              <div className="h-5 w-1.5 bg-green-600 rounded-full"></div>
-              Product Image
+          {/* Right Column: Image */}
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[#10b981] mb-6 border-l-4 border-[#10b981] pl-3">
+              03. Media
             </h2>
+
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className={`relative flex flex-col items-center justify-center w-full max-w-md p-8 rounded-xl border-2 border-dashed transition-all duration-300 ${
-                image
-                  ? "border-gray-300 bg-white"
-                  : "border-gray-300 hover:border-green-400 hover:bg-green-50/50"
-              }`}
+              className={`relative flex flex-col items-center justify-center w-full max-w-sm mx-auto aspect-square border-2 border-dashed transition-all duration-300 ${image
+                ? "border-gray-300 bg-white"
+                : isViewMode ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-green-400 hover:bg-green-50/10"
+                }`}
             >
               {!image ? (
                 <label
                   htmlFor="imageUpload"
-                  className="flex flex-col items-center justify-center w-full cursor-pointer"
+                  className={`flex flex-col items-center justify-center w-full h-full ${isViewMode ? "cursor-default" : "cursor-pointer"}`}
                 >
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center p-6 text-center">
                     <div className="mb-4">
-                      <ArrowUpTrayIcon className="h-12 w-12 text-gray-400" />
+                      <ArrowUpTrayIcon className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-700 font-medium mb-1">
-                      Click or drag to upload
-                    </p>
-                    <p className="text-sm text-gray-500 mb-6">
-                      PNG, JPG, JPEG, WEBP (Max 20 MB)
-                    </p>
-                    <span className="inline-flex items-center gap-2 text-sm bg-[#007e5d] text-white px-4 py-2 rounded-md hover:bg-[#005f4f] transition-colors duration-200 shadow-sm font-medium">
-                      <ArrowUpTrayIcon className="h-5 w-5" />
-                      Upload Image
-                    </span>
+                    {!isViewMode && (
+                      <>
+                        <p className="text-xs font-mono uppercase text-gray-500 mb-4">
+                          DRAG & DROP OR CLICK
+                        </p>
+                        <span className="inline-flex items-center text-[10px] uppercase font-bold bg-[#007e5d] text-white px-4 py-2 hover:bg-[#005f4f] transition-colors">
+                          UPLOAD IMAGE
+                        </span>
+                      </>
+                    )}
+                    {isViewMode && <p className="text-xs font-mono text-gray-400">NO IMAGE</p>}
                   </div>
                   <input
                     id="imageUpload"
@@ -238,59 +370,38 @@ export default function AddProduct() {
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
+                    disabled={isViewMode}
                   />
                 </label>
               ) : (
-                <div className="w-full">
-                  <div className="relative inline-block">
-                    <div className="relative overflow-hidden rounded-xl border-2 border-gray-200 shadow-md">
-                      <img
-                        src={image.url}
-                        alt="Product Preview"
-                        className="w-48 h-48 object-cover"
-                      />
+                <div className="w-full h-full relative group">
+                  <img
+                    src={image.url}
+                    alt="Product"
+                    className="w-full h-full object-contain"
+                  />
+                  {!isViewMode && (
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="bg-red-500 text-white p-2 rounded-none hover:bg-red-600 transition-colors"
+                      >
+                        <XMarkIcon className="h-5 w-5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="cursor-pointer absolute top-0 right-0 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-110"
-                      title="Remove image"
-                    >
-                      <XMarkIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <label
-                    htmlFor="imageUploadReplace"
-                    className="flex flex-col items-center justify-center w-full cursor-pointer mt-6"
-                  >
-                    <span className="inline-flex items-center gap-2 bg-[#007e5d] border border-gray-300 text-white px-4 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 font-medium text-sm">
-                      <ArrowUpTrayIcon className="h-5 w-5" />
-                      Replace Image
-                    </span>
-                    <input
-                      id="imageUploadReplace"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">
-                      {image.name || "Product Image"}
-                    </p>
-                    {image.size && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {(image.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
             </div>
-          </section>
-        </div>
-      </form>
+            {image && (
+              <div className="mt-2 text-center">
+                <p className="text-[10px] font-mono uppercase text-gray-400">{image.name}</p>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

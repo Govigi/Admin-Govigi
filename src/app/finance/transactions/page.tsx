@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import PathShower from "@/src/components/pathShower";
 import { ArrowDownIcon, ArrowUpIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import axios from "axios";
 import { AdminUrl } from "@/src/libs/utils/API/endpoints";
@@ -31,85 +30,119 @@ export default function WalletTransactions() {
 
     const filtered = transactions.filter(t => filterType === "all" || t.type === filterType);
 
+    const totalCredit = transactions
+        .filter(t => t.type === 'credit')
+        .reduce((sum, t) => sum + t.amount, 0);
+    const totalDebit = transactions
+        .filter(t => t.type === 'debit')
+        .reduce((sum, t) => sum + t.amount, 0);
+
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <PathShower
-                pathList={[
-                    ["finance", "Finance"],
-                    ["transactions", "Wallet Transactions"],
-                ]}
-            />
+        <div className="min-h-screen bg-white p-6 md:p-8 font-sans text-gray-900">
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">Wallet Transactions</h1>
-
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <FunnelIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <select
-                                value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
-                                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-green-500 focus:border-green-500 appearance-none"
-                            >
-                                <option value="all">All Types</option>
-                                <option value="credit">Credits Only</option>
-                                <option value="debit">Debits Only</option>
-                            </select>
-                        </div>
-                    </div>
+            {/* Header */}
+            <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-gray-200 pb-4">
+                <div>
+                    <h1 className="text-xl font-bold uppercase tracking-widest border-l-4 border-black pl-4">
+                        Wallet Transactions
+                    </h1>
+                    <p className="text-xs text-gray-400 mt-1 pl-5 font-mono">
+                        System Wallet Transactions
+                    </p>
                 </div>
 
-                {loading ? (
-                    <div className="text-center py-10">Loading transactions...</div>
-                ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {filtered.map((t) => (
-                                        <tr key={t._id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {new Date(t.timestamp).toLocaleString()}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {t.customerId ? `${t.customerId.customerName} (${t.customerId.customerPhone})` : "Guest / Unknown"}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                                                {t.referenceId || "—"}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                                                {t.source}
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold text-right ${t.type === "credit" ? "text-green-600" : "text-red-600"
-                                                }`}>
-                                                <div className="flex items-center justify-end gap-1">
-                                                    {t.type === "credit" ? "+" : "-"} ₹{t.amount.toFixed(2)}
-                                                    {t.type === "credit" ? <ArrowUpIcon className="w-3 h-3" /> : <ArrowDownIcon className="w-3 h-3" />}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filtered.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No transactions found.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                {/* Quick Stats Ticker */}
+                <div className="flex gap-6 mt-4 md:mt-0 font-mono text-xs">
+                    <div>
+                        <span className="text-gray-400 block uppercase tracking-wider">Total Credits</span>
+                        <span className="text-lg font-bold text-green-600">₹{totalCredit.toLocaleString('en-IN')}</span>
                     </div>
-                )}
+                    <div>
+                        <span className="text-gray-400 block uppercase tracking-wider">Total Debits</span>
+                        <span className="text-lg font-bold text-red-600">₹{totalDebit.toLocaleString('en-IN')}</span>
+                    </div>
+                </div>
             </div>
+
+            {/* Filter Bar */}
+            <div className="flex mb-6">
+                <div className="inline-flex border border-gray-300 rounded overflow-hidden">
+                    {(['all', 'credit', 'debit'] as const).map((type) => (
+                        <button
+                            key={type}
+                            onClick={() => setFilterType(type)}
+                            className={`px-4 py-2 text-xs font-mono uppercase font-bold transition-colors
+                                ${filterType === type
+                                    ? 'bg-black text-white'
+                                    : 'bg-white text-gray-600 hover:bg-gray-100 border-r border-gray-200 last:border-r-0'
+                                }`}
+                        >
+                            {type === 'all' ? 'All Logs' : type}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Table */}
+            {loading ? (
+                <div className="text-center py-20 font-mono text-sm animate-pulse text-gray-400">
+                    LOADING FINANCIAL DATA...
+                </div>
+            ) : (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-left text-sm font-mono">
+                        <thead className="bg-gray-50 text-[10px] uppercase text-gray-500 font-medium border-b border-gray-200">
+                            <tr>
+                                <th className="p-4 pl-6">Timestamp</th>
+                                <th className="p-4">Customer</th>
+                                <th className="p-4">Reference</th>
+                                <th className="p-4">Source</th>
+                                <th className="p-4 pr-6 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filtered.length > 0 ? filtered.map((t) => (
+                                <tr key={t._id} className="hover:bg-gray-50 transition-colors group">
+                                    <td className="p-4 pl-6 text-gray-500">
+                                        {new Date(t.timestamp).toLocaleDateString([], { day: '2-digit', month: 'short' })}
+                                        <span className="text-gray-400 ml-2">
+                                            {new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 font-bold text-gray-900">
+                                        {t.customerId ? (
+                                            <div>
+                                                <div>{t.customerId.customerName}</div>
+                                                <div className="text-[10px] font-normal text-gray-400">{t.customerId.customerPhone}</div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 italic">Unknown</span>
+                                        )}
+                                    </td>
+                                    <td className="p-4 text-gray-500 text-xs">
+                                        {t.referenceId || "—"}
+                                    </td>
+                                    <td className="p-4 uppercase text-xs font-bold tracking-wider text-gray-600">
+                                        {t.source}
+                                    </td>
+                                    <td className="p-4 pr-6 text-right">
+                                        <div className={`inline-flex items-center gap-1 font-bold ${t.type === "credit" ? "text-emerald-600" : "text-red-500"
+                                            }`}>
+                                            {t.type === "credit" ? "+" : "-"} ₹{t.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </div>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="p-12 text-center text-gray-400 italic">
+                                        No financial records found for this filter.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
