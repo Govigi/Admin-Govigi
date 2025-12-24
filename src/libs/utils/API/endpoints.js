@@ -76,6 +76,13 @@ export const AdminUrl = {
   updateSettings: backend_url + "/admin/settings",
 };
 
+export const GoogleMapsUrl = {
+  autocomplete: backend_url + "/maps/autocomplete",
+  placeDetails: backend_url + "/maps/place-details",
+  geocode: backend_url + "/maps/geocode",
+  reverseGeocode: backend_url + "/maps/reverse-geocode",
+};
+
 
 export const VendorUrl = {
   createVendor: backend_url + "/vendors/create",

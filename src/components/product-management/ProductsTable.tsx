@@ -1,10 +1,9 @@
 "use client";
 import DataTable from "react-data-table-component";
 import {
-    ArrowDownIcon,
     EllipsisHorizontalIcon,
 } from "@heroicons/react/24/outline";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import BulkUpdateModal from "./BulkUpdateModal";
@@ -65,84 +64,6 @@ const customStyles = {
         },
     },
 };
-
-const columns = [
-    {
-        name: "Product",
-        selector: (row: any) => row.name,
-        sortable: true,
-        cell: (row: any) => (
-            <div className="flex items-center gap-3 py-2">
-                {row.image?.url ? (<img src={row.image.url} alt="" className="w-8 h-8 object-cover border border-gray-200" />) : (<div className="w-8 h-8 bg-gray-100 border border-gray-200"></div>)}
-                <div className="flex flex-col">
-                    <span className="font-bold uppercase">{row.name}</span>
-                    <span className="text-[10px] text-gray-400">{row.subCategory?.name}</span>
-                </div>
-            </div>
-        ),
-        width: "250px",
-    },
-    {
-        name: "Category",
-        selector: (row: any) => row.category || "N/A",
-        sortable: true,
-        cell: (row: any) => (
-            <span className="font-mono text-[10px] uppercase tracking-wide">
-                {row.category || "N/A"}
-            </span>
-        ),
-    },
-    {
-        name: "Price",
-        selector: (row: any) => row.pricePerKg,
-        sortable: true,
-        cell: (row: any) => (
-            <span className="font-mono font-bold">
-                ₹{row.pricePerKg} <span className="text-gray-400 font-normal">/ {row.unit}</span>
-            </span>
-        ),
-    },
-    {
-        name: "Stock",
-        selector: (row: any) => row.stock,
-        sortable: true,
-        cell: (row: any) => (
-            <div className="flex flex-col">
-                <span className={`font-mono font-bold ${row.stock < 10 ? "text-red-500" : "text-black"}`}>{row.stock} {row.unit}</span>
-                {row.stock < 10 && <span className="text-[10px] text-red-500 uppercase">Low Stock</span>}
-            </div>
-        ),
-    },
-    {
-        name: "Status",
-        selector: (row: any) => row.status,
-        sortable: true,
-        cell: (row: any) => (
-            <span
-                className={`border py-0.5 px-2 text-[10px] uppercase font-mono tracking-wide ${row.status === "active"
-                    ? "border-green-200 text-green-700 bg-green-50"
-                    : "border-gray-200 text-gray-500 bg-gray-50"
-                    }`}
-            >
-                {row.status === "active" ? "Active" : "Inactive"}
-            </span>
-        ),
-    },
-    {
-        name: "Last Updated",
-        selector: (row: any) => row.updatedAt,
-        sortable: true,
-        cell: (row: any) => new Date(row.updatedAt).toLocaleDateString("en-IN"),
-        right: true,
-    },
-    {
-        name: "Actions",
-        cell: (row: any) => <ActionsMenu row={row} />,
-        ignoreRowClick: true,
-        width: "80px",
-        right: true,
-    },
-];
 
 function ActionsMenu({ row }: { row: any }) {
     const [open, setOpen] = useState(false);
@@ -233,22 +154,92 @@ export default function ProductsTable({
     const [selectedRows, setSelectedRows] = useState<any[]>([]);
     const [toggledClearRows, setToggleClearRows] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-    const router = useRouter();
 
     const handleRowSelected = ({ selectedRows }: any) => {
         setSelectedRows(selectedRows);
     };
 
     const handleBulkUpdateSuccess = () => {
-        setToggleClearRows(!toggledClearRows); // Clear selection in DataTable
+        setToggleClearRows(!toggledClearRows);
         setSelectedRows([]);
-        // Ideally we should refresh data. 
-        // Since products are passed as prop, we might need to trigger parent refresh.
-        // But for now, let's just reload page or router refresh.
         window.location.reload();
     };
 
-    // contextActions logic removed in favor of custom bar
+    const columns = useMemo(() => [
+        {
+            name: "Product",
+            selector: (row: any) => row.name,
+            sortable: true,
+            cell: (row: any) => (
+                <div className="flex items-center gap-3 py-2">
+                    {row.image?.url ? (<img src={row.image.url} alt="" className="w-8 h-8 object-contain border border-gray-200" />) : (<div className="w-8 h-8 bg-gray-100 border border-gray-200"></div>)}
+                    <div className="flex flex-col">
+                        <span className="font-bold uppercase">{row.name}</span>
+                        <span className="text-[10px] text-gray-400">{row.subCategory?.name}</span>
+                    </div>
+                </div>
+            ),
+            width: "250px",
+        },
+        {
+            name: "Category",
+            selector: (row: any) => row.category || "N/A",
+            sortable: true,
+            cell: (row: any) => (
+                <span className="font-mono text-[10px] uppercase tracking-wide">
+                    {row.category || "N/A"}
+                </span>
+            ),
+        },
+        {
+            name: "Price",
+            selector: (row: any) => row.pricePerKg,
+            sortable: true,
+            cell: (row: any) => (
+                <span className="font-mono font-bold">
+                    ₹{row.pricePerKg} <span className="text-gray-400 font-normal">/ {row.unit}</span>
+                </span>
+            ),
+        },
+        {
+            name: "Stock",
+            selector: (row: any) => row.stock,
+            sortable: true,
+            cell: (row: any) => (
+                <div className="flex flex-col">
+                    <span className={`font-mono font-bold ${row.stock < 10 ? "text-red-500" : "text-black"}`}>{row.stock} {row.unit}</span>
+                    {row.stock < 10 && <span className="text-[10px] text-red-500 uppercase">Low Stock</span>}
+                </div>
+            ),
+        },
+        {
+            name: "Status",
+            selector: (row: any) => row.status,
+            sortable: true,
+            cell: (row: any) => (
+                <span
+                    className={`border py-0.5 px-2 text-[10px] uppercase font-mono tracking-wide ${row.status === "active"
+                        ? "border-green-200 text-green-700 bg-green-50"
+                        : "border-gray-200 text-gray-500 bg-gray-50"
+                        }`}
+                >
+                    {row.status === "active" ? "Active" : "Inactive"}
+                </span>
+            ),
+        },
+        {
+            name: "Last Updated",
+            selector: (row: any) => row.updatedAt,
+            sortable: true,
+            cell: (row: any) => new Date(row.updatedAt).toLocaleDateString("en-IN"),
+        },
+        {
+            name: "Actions",
+            cell: (row: any) => <ActionsMenu row={row} />,
+            ignoreRowClick: true,
+            width: "80px",
+        },
+    ], []);
 
     return (
         <div className="border border-gray-200 relative rounded-lg overflow-hidden bg-white w-full max-w-full">
@@ -263,6 +254,15 @@ export default function ProductsTable({
             {/* Custom Bulk Action Bar */}
             {selectedRows.length > 0 && (
                 <div className="absolute top-0 left-0 right-0 z-10 bg-[#10b981] text-white h-[40px] flex items-center justify-between px-4 animate-in fade-in slide-in-from-top-2">
+                    <input
+                        type="checkbox"
+                        className="h-3 w-3 rounded border-white/20 bg-white/20 text-white focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                        checked={selectedRows.length > 0}
+                        onChange={() => {
+                            setToggleClearRows(!toggledClearRows);
+                            setSelectedRows([]);
+                        }}
+                    />
                     <div className="font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                         <span>{selectedRows.length} Selected</span>
                     </div>
@@ -293,7 +293,7 @@ export default function ProductsTable({
                     selectableRows
                     onSelectedRowsChange={handleRowSelected}
                     clearSelectedRows={toggledClearRows}
-                // contextActions removed, using custom bar
+                    keyField="_id"
                 />
             </div>
         </div>

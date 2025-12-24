@@ -214,7 +214,6 @@ export default function OrderDetailsPage() {
                             <tr key={idx} className="border-b border-gray-200">
                                 <td className="py-3 text-sm">
                                     <div className="font-bold">{item.name}</div>
-                                    <div className="text-[10px] text-gray-500">{item.productId.slice(-6)}</div>
                                 </td>
                                 <td className="py-3 text-right text-sm">₹{item.price}</td>
                                 <td className="py-3 text-right text-sm">{item.quantity} {item.unit}</td>
@@ -385,7 +384,7 @@ export default function OrderDetailsPage() {
                                                         <div className="flex items-center gap-4">
                                                             <div className="h-12 w-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
                                                                 {item.image ? (
-                                                                    <img src={item.image} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                                                                    <img src={item.image} alt="" className="h-full w-full object-contain group-hover:scale-105 transition-transform" />
                                                                 ) : (
                                                                     <div className="h-full w-full flex items-center justify-center text-[9px] text-gray-400">IMG</div>
                                                                 )}

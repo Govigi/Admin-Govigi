@@ -11,6 +11,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { OrderSummaryUrl, CategoryManagementUrl } from "../../../libs/utils/API/endpoints";
 import { useLoading } from "@/src/libs/Hooks/LoadingContext";
+import { useUI } from "@/src/libs/Hooks/UIContext";
 
 interface ImageData {
   file: File;
@@ -19,6 +20,40 @@ interface ImageData {
   size?: number;
 }
 
+
+
+
+const InputField = ({ label, value, onChange, placeholder, type = "text", disabled = false, isViewMode = false }: any) => (
+  <div className="mb-4">
+    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      disabled={disabled || isViewMode}
+      placeholder={isViewMode ? "" : placeholder}
+      className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors placeholder-gray-300 font-mono ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
+    />
+  </div>
+);
+
+const SelectField = ({ label, value, onChange, options, disabled = false, isViewMode = false }: any) => (
+  <div className="mb-4">
+    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
+    <select
+      value={value}
+      onChange={onChange}
+      disabled={disabled || isViewMode}
+      className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors font-mono uppercase ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
+    >
+      <option value="">-- Select --</option>
+      {options.map((opt: any) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </div>
+);
+
 export default function AddProduct() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,9 +61,8 @@ export default function AddProduct() {
   const mode = searchParams.get("mode");
   const isEditMode = !!id;
   const isViewMode = mode === "view";
+  const { showToast } = useUI();
 
-  // Mock loader for now since context might not be fully available in this snippet scope, 
-  // but assuming it exists based on previous files.
   const { showLoader, hideLoader } = useLoading ? useLoading() : { showLoader: () => { }, hideLoader: () => { } };
 
   const [formData, setFormData] = useState({
@@ -44,6 +78,8 @@ export default function AddProduct() {
 
   const [categories, setCategories] = useState<any[]>([]);
   const [image, setImage] = useState<ImageData | null>(null);
+
+
 
   useEffect(() => {
     fetchCategories();
@@ -61,7 +97,7 @@ export default function AddProduct() {
         setCategories(catList);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      showToast(`Error fetching categories: ${error}`, "error");
     }
   };
 
@@ -93,7 +129,7 @@ export default function AddProduct() {
       }
 
     } catch (err) {
-      console.error("Error fetching product", err);
+      showToast(`Error fetching product: ${err}`, "error");
     } finally {
       hideLoader();
     }
@@ -141,6 +177,7 @@ export default function AddProduct() {
     payload.append("category", formData.category);
     payload.append("pricePerKg", formData.pricePerKg);
     payload.append("stock", formData.stock);
+
     payload.append("status", formData.status);
     payload.append("unit", formData.unit);
 
@@ -160,50 +197,18 @@ export default function AddProduct() {
     })
       .then((response) => {
         if (response.ok) {
-          console.log("Product saved successfully");
           router.push("/product-management");
         } else {
-          console.error("Error saving product");
+          showToast("Error saving product", "error");
         }
       })
       .catch((error) => {
-        console.error("Network error:", error);
+        showToast("Network error:", "error");
       })
       .finally(() => {
         hideLoader();
       });
   };
-
-  const InputField = ({ label, value, onChange, placeholder, type = "text", disabled = false }: any) => (
-    <div className="mb-4">
-      <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        disabled={disabled || isViewMode}
-        placeholder={isViewMode ? "" : placeholder}
-        className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors placeholder-gray-300 font-mono ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
-      />
-    </div>
-  );
-
-  const SelectField = ({ label, value, onChange, options, disabled = false }: any) => (
-    <div className="mb-4">
-      <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
-      <select
-        value={value}
-        onChange={onChange}
-        disabled={disabled || isViewMode}
-        className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors font-mono uppercase ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
-      >
-        <option value="">-- Select --</option>
-        {options.map((opt: any) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-white p-4 md:p-8 font-mono text-gray-900">
@@ -276,13 +281,14 @@ export default function AddProduct() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
                 <InputField
+                  isViewMode={isViewMode}
                   label="Product Name"
                   value={formData.name}
                   onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="ENTER NAME"
                 />
-                {/* Categories should ideally come from API, hardcoding for now based on previous file */}
                 <SelectField
+                  isViewMode={isViewMode}
                   label="Category"
                   value={formData.category}
                   onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
@@ -301,6 +307,7 @@ export default function AddProduct() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-2">
                 <InputField
+                  isViewMode={isViewMode}
                   label="Price"
                   type="number"
                   value={formData.pricePerKg}
@@ -308,22 +315,28 @@ export default function AddProduct() {
                   placeholder="0.00"
                 />
                 <SelectField
+                  isViewMode={isViewMode}
                   label="Unit"
                   value={formData.unit}
                   onChange={(e: any) => setFormData({ ...formData, unit: e.target.value })}
                   options={[
                     { value: "kg", label: "Kg" },
                     { value: "g", label: "Gram" },
+                    { value: "bunch", label: "Bunch" },
                     { value: "pcs", label: "Pieces" },
                     { value: "pack", label: "Pack" },
                     { value: "ltr", label: "Liter" },
                   ]}
                 />
-                <InputField
-                  label="Stock Quantity"
+                <SelectField
+                  isViewMode={isViewMode}
+                  label="Stock Status"
                   value={formData.stock}
                   onChange={(e: any) => setFormData({ ...formData, stock: e.target.value })}
-                  placeholder="0"
+                  options={[
+                    { value: "Available", label: "Available" },
+                    { value: "Out of Stock", label: "Out of Stock" },
+                  ]}
                 />
               </div>
             </div>
@@ -367,7 +380,7 @@ export default function AddProduct() {
                   <input
                     id="imageUpload"
                     type="file"
-                    accept="image/*"
+                    accept=".jpg, .jpeg, .png"
                     onChange={handleImageUpload}
                     className="hidden"
                     disabled={isViewMode}

@@ -31,7 +31,7 @@ export default function GlobalToast() {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[110] animate-in slide-in-from-right duration-300">
+        <div className="fixed top-6 right-6 z-[110] animate-in slide-in-from-right duration-300">
             <div className={`flex items-center gap-3 px-4 py-3 bg-white border-l-4 shadow-[4px_4px_10px_0px_rgba(0,0,0,0.1)] min-w-[300px] max-w-md ${borders[toast.type]}`}>
                 <div className={`p-1 rounded-full ${bgs[toast.type]}`}>
                     {icons[toast.type]}

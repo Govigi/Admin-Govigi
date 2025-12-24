@@ -25,6 +25,8 @@ const geistMono = Geist_Mono({
     subsets: ["latin"],
 });
 
+import Providers from "../components/Providers";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -46,27 +48,36 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }, [pathname, router]);
 
     return (
-        <LoadingProvider>
-            <UIProvider>
-                <GlobalLoader />
-                <GlobalModal />
-                <GlobalToast />
-                <SidePanelProvider>
-                    <div className="flex h-screen bg-gray-50 overflow-hidden">
-                        {isClient && showLayout && pathname !== "/login" && <Sidebar />}
-                        <div className={`flex-1 flex flex-col ${pathname !== "/login" ? "ml-0 md:ml-64" : ""}`}>
-                            {isClient && showLayout && pathname !== "/login" && (
-                                <div className="fixed top-0 left-0 md:left-64 right-0 z-20">
-                                    <TopBar />
-                                </div>
-                            )}
-                            <main className={`flex-1 overflow-y-auto ${pathname !== "/login" ? "mt-16" : ""}`}>{children}</main>
+        <Providers>
+            <LoadingProvider>
+                <UIProvider>
+                    <GlobalLoader />
+                    <GlobalModal />
+                    <GlobalToast />
+                    <SidePanelProvider>
+                        <div className="flex h-screen bg-gray-50 overflow-hidden print:h-auto print:overflow-visible">
+                            {/* Sidebar Wrapper: 'contents' keeps it as Flex child on screen, 'print:hidden' removes it on print */}
+                            <div className="contents print:hidden">
+                                {isClient && showLayout && pathname !== "/login" && <Sidebar />}
+                            </div>
+
+                            <div className={`flex-1 flex flex-col ${pathname !== "/login" ? "ml-0 md:ml-64 print:ml-0" : ""}`}>
+                                {isClient && showLayout && pathname !== "/login" && (
+                                    <div className="fixed top-0 left-0 md:left-64 right-0 z-20 print:hidden">
+                                        <TopBar />
+                                    </div>
+                                )}
+                                <main className={`flex-1 overflow-y-auto print:overflow-visible print:h-auto ${pathname !== "/login" ? "mt-16 print:mt-0" : ""}`}>{children}</main>
+                            </div>
+
+                            {/* Global side panel - hidden on print */}
+                            <div className="print:hidden">
+                                <SidePanel />
+                            </div>
                         </div>
-                        {/* Global side panel */}
-                        <SidePanel />
-                    </div>
-                </SidePanelProvider>
-            </UIProvider>
-        </LoadingProvider>
+                    </SidePanelProvider>
+                </UIProvider>
+            </LoadingProvider>
+        </Providers>
     );
 }

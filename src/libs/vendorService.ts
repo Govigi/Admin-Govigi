@@ -1,5 +1,5 @@
 import axios from "axios";
-import { VendorUrl } from "./utils/API/endpoints";
+import { VendorUrl, CategoryManagementUrl } from "./utils/API/endpoints";
 
 const getAuthHeader = () => {
     const token = localStorage.getItem("admin_token");
@@ -28,5 +28,10 @@ export const updateVendor = async (id: string, data: any) => {
 
 export const deleteVendor = async (id: string) => {
     const response = await axios.delete(`${VendorUrl.deleteVendor}/${id}`, getAuthHeader());
+    return response.data;
+};
+
+export const getCategories = async () => {
+    const response = await axios.get(CategoryManagementUrl.getAllCategories, getAuthHeader());
     return response.data;
 };

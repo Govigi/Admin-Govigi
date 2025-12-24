@@ -94,6 +94,13 @@ export default function Sidebar() {
       ],
     },
     {
+      name: "Marketing",
+      icon: Cog6ToothIcon,
+      subModules: [
+        { name: "Mobile App Banners", path: "/marketing/banners" },
+      ],
+    },
+    {
       name: "Settings",
       icon: Cog6ToothIcon,
       subModules: [

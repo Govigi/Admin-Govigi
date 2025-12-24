@@ -12,11 +12,6 @@ export default function SourcingPage() {
     const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-    // Default to today, or maybe just show all pending sourcing?
-    // Let's reuse date filter approach for consistency, or just show pending.
-    // For MVP Sourcing, showing "Tomorrow" (since that's usually what we source for) makes sense.
-    // Implementing same date filter logic as Ordersummary for safety.
-
     const getTomorrowDate = () => {
         const today = new Date();
         const tomorrow = new Date(today);
@@ -53,9 +48,6 @@ export default function SourcingPage() {
                         const targetDateStr = String(targetDate).split('T')[0];
                         return targetDateStr === dateFilter;
                     })
-                    // Filter for only orders that need sourcing (Optional, but user said "assign vendors")
-                    // Maybe we show all, but highlight pending? 
-                    // Let's show all for now so they can re-assign if needed.
                     .map((item: any) => ({
                         id: item._id,
                         orderId: item._id ? item._id.slice(-6).toUpperCase() : "N/A",
@@ -85,6 +77,14 @@ export default function SourcingPage() {
         fetchOrders();
     };
 
+    const [activeTab, setActiveTab] = useState<'pending' | 'assigned'>('pending');
+
+    const filteredOrders = orders.filter(o =>
+        activeTab === 'pending'
+            ? o.sourcingStatus !== 'Assigned'
+            : o.sourcingStatus === 'Assigned'
+    );
+
     return (
         <div className="h-[calc(100vh-64px)] bg-white font-mono text-gray-900 flex flex-col">
             <VendorAssignmentModal
@@ -94,34 +94,39 @@ export default function SourcingPage() {
                 onAssignSuccess={handleAssignSuccess}
             />
 
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-6 py-4 border-b border-gray-200 shrink-0">
-                <div>
-                    <h1 className="text-xl font-bold uppercase tracking-widest flex items-center gap-2">
-                        <TruckIcon className="h-6 w-6" />
-                        Sourcing Dashboard
+            {/* Minimal Header */}
+            <div className="flex justify-between items-center px-6 py-3 border-b border-gray-100 shrink-0 bg-white z-20">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                        <TruckIcon className="h-4 w-4" />
+                        Sourcing
                     </h1>
-                    <p className="text-xs text-gray-400 mt-1">
-                        Assign vendors for {dateFilter}
-                    </p>
+                    <div className="h-4 w-px bg-gray-200"></div>
+                    <span className="text-xs text-gray-400">
+                        Supply for {dateFilter}
+                    </span>
                 </div>
-                <div className="flex items-center gap-4 mt-4 md:mt-0">
+                <div>
                     <input
                         type="date"
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
-                        className="text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none"
+                        className="text-xs border-none bg-gray-50 rounded px-2 py-1 focus:outline-none hover:bg-gray-100 transition-colors cursor-pointer"
                     />
                 </div>
             </div>
 
-            <div className="flex-1 p-2 overflow-hidden">
+            {/* Content Area - Edge to Edge */}
+            <div className="flex-1 overflow-hidden bg-white">
                 <SourcingGrid
-                    orders={orders}
+                    orders={filteredOrders}
                     loading={loading}
                     onAssignVendor={(ordersToAssign) => {
                         setSelectedOrders(ordersToAssign);
                         setIsAssignModalOpen(true);
                     }}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
                 />
             </div>
         </div>
