@@ -5,16 +5,17 @@ import {
     ArrowRightIcon,
     CheckCircleIcon,
     UserIcon,
-    ShoppingBagIcon
+    LockClosedIcon
 } from "@heroicons/react/24/outline";
 
 interface OrderDetailsPanelProps {
     order: any | null;
     onClose: () => void;
     onAssign: (orderId: string) => void;
+    isLocked?: boolean;
 }
 
-export default function OrderDetailsPanel({ order, onClose, onAssign }: OrderDetailsPanelProps) {
+export default function OrderDetailsPanel({ order, onClose, onAssign, isLocked = false }: OrderDetailsPanelProps) {
 
     // Helper to categorize items
     const detailCategories = useMemo(() => {
@@ -139,13 +140,20 @@ export default function OrderDetailsPanel({ order, onClose, onAssign }: OrderDet
                             </span>
                         </div>
                         {order.sourcingStatus !== 'Assigned' ? (
-                            <button
-                                onClick={() => onAssign(order.id)}
-                                className="w-full py-4 bg-black text-white text-sm font-bold uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-900 transition-all flex justify-center items-center gap-2"
-                            >
-                                <span>Assign Vendor</span>
-                                <ArrowRightIcon className="w-4 h-4" />
-                            </button>
+                            isLocked ? (
+                                <div className="w-full py-4 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-widest rounded-xl flex justify-center items-center gap-2 cursor-not-allowed">
+                                    <LockClosedIcon className="w-4 h-4" />
+                                    <span>Assignment Locked</span>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => onAssign(order.id)}
+                                    className="w-full py-4 bg-black text-white text-sm font-bold uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-900 transition-all flex justify-center items-center gap-2"
+                                >
+                                    <span>Assign Vendor</span>
+                                    <ArrowRightIcon className="w-4 h-4" />
+                                </button>
+                            )
                         ) : (
                             <div className="w-full py-2 bg-green-50 text-green-700 text-sm font-bold uppercase tracking-widest rounded-md border border-green-200 flex justify-center items-center gap-2">
                                 <CheckCircleIcon className="w-5 h-5" />

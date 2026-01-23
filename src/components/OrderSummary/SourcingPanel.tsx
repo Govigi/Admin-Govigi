@@ -146,12 +146,12 @@ export default function SourcingPanel({ orders, loading }: SourcingPanelProps) {
 
     return (
         <div className={containerClass}>
-            <div className="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center">
+            <div className="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div>
                     <h3 className="font-mono text-xs uppercase tracking-widest text-gray-500">
                         Sourcing Requirements
                     </h3>
-                    <div className="font-mono text-2xl font-bold mt-1">
+                    <div className="font-mono text-xl font-bold mt-1 text-gray-900">
                         {sourcingList.length} <span className="text-sm font-normal text-gray-400">items</span>
                     </div>
                 </div>
@@ -177,47 +177,53 @@ export default function SourcingPanel({ orders, loading }: SourcingPanelProps) {
                 </div>
             </div>
 
-            <div className={`flex-1 overflow-y-auto pr-2 ${isExpanded ? 'px-4' : ''}`}>
-                <div className={`grid gap-3 ${isExpanded ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'}`}>
+            <div className={`flex-1 overflow-y-auto pr-2 -mr-2 ${isExpanded ? 'px-4' : ''}`}>
+                <div className={`grid gap-3 ${isExpanded
+                    ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
+                    }`}>
                     {sourcingList.map((item) => (
                         <div
                             key={item.productId}
-                            className="border border-gray-200 rounded-lg p-3 hover:border-primary/50 hover:shadow-sm transition-all bg-white"
+                            className="group border border-gray-200 rounded-xl p-3 hover:border-primary/50 hover:shadow-md transition-all bg-white flex flex-col justify-between"
                         >
-                            <div className="flex gap-3">
-                                <div className="w-16 h-16 bg-gray-50 rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
+                            <div className="flex gap-3 items-start">
+                                <div className="w-10 h-10 bg-gray-50 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-primary/20 transition-colors">
                                     {item.image ? (
                                         <img
                                             src={item.image}
                                             alt={item.productName}
-                                            className="w-full h-full object-contain"
+                                            className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).style.display = 'none';
                                                 (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                                             }}
                                         />
                                     ) : (
-                                        <PhotoIcon className="w-6 h-6 text-gray-300" />
+                                        <PhotoIcon className="w-5 h-5 text-gray-300" />
                                     )}
                                     <div className={`hidden w-full h-full flex items-center justify-center ${item.image ? '' : 'hidden'}`}>
-                                        <PhotoIcon className="w-6 h-6 text-gray-300" />
+                                        <PhotoIcon className="w-5 h-5 text-gray-300" />
                                     </div>
                                 </div>
-                                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                                    <div>
-                                        <div className="font-bold text-gray-900 text-sm truncate leading-tight" title={item.productName}>
-                                            {item.productName}
-                                        </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2" title={item.productName}>
+                                        {item.productName}
                                     </div>
-                                    <div className="flex items-end justify-between mt-2">
-                                        <div className="font-mono bg-gray-100 px-2 py-1 rounded">
-                                            <span className="text-xl font-bold text-gray-900">{item.totalQuantity}</span>
-                                            <span className="text-xs text-gray-600 ml-1 font-medium">{item.unit}</span>
-                                        </div>
-                                        <div className="text-[10px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
-                                            {item.orderCount} ord
-                                        </div>
+                                    <div className="text-[10px] text-gray-400 mt-1 font-medium">
+                                        {item.orderCount} order{item.orderCount !== 1 ? 's' : ''}
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 pt-2 border-t border-gray-50 flex items-center justify-between">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-lg font-bold text-gray-900 tabular-nums tracking-tight">
+                                        {item.totalQuantity}
+                                    </span>
+                                    <span className="text-xs text-gray-500 font-medium lowercase">
+                                        {item.unit}
+                                    </span>
                                 </div>
                             </div>
                         </div>

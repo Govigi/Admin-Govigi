@@ -72,9 +72,10 @@ interface SourcingGridProps {
     onAssignVendor: (selectedOrders: any[]) => void;
     activeTab: 'pending' | 'assigned';
     onTabChange: (tab: 'pending' | 'assigned') => void;
+    isLocked?: boolean;
 }
 
-export default function SourcingGrid({ orders, loading, onAssignVendor, activeTab, onTabChange }: SourcingGridProps) {
+export default function SourcingGrid({ orders, loading, onAssignVendor, activeTab, onTabChange, isLocked = false }: SourcingGridProps) {
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [toggledClearRows, setToggleClearRows] = useState(false);
     const [detailOrderId, setDetailOrderId] = useState<string | null>(null); // For Side Panel
@@ -96,6 +97,7 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
     };
 
     const handleAssignClick = (ids: string[] = selectedOrderIds) => {
+        if (isLocked) return;
         const selected = orders.filter(o => ids.includes(o.id));
         setAssignSelection(selected);
         setIsAssignPanelOpen(true);
@@ -236,7 +238,7 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
 
                 {/* Bulk Action Overlay Bar */}
                 {selectedOrderIds.length > 0 && activeTab === 'pending' && (
-                    <div className="absolute top-[70px] left-0 right-0 z-10 bg-[#166534] text-white h-[40px] flex items-center justify-between px-4 animate-in fade-in slide-in-from-top-2 shadow-md mx-4 rounded-t-none rounded-b-md">
+                    <div className={`absolute top-[70px] left-0 right-0 z-10 h-[40px] flex items-center justify-between px-4 animate-in fade-in slide-in-from-top-2 shadow-md mx-4 rounded-t-none rounded-b-md ${isLocked ? "bg-gray-800 text-gray-300" : "bg-[#166534] text-white"}`}>
                         <div className="flex items-center gap-4">
                             <input
                                 type="checkbox"
@@ -251,13 +253,19 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
                                 {selectedOrderIds.length} Selected
                             </span>
                         </div>
-                        <button
-                            onClick={() => handleAssignClick()}
-                            className="bg-white text-[#166534] hover:bg-gray-100 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 flex items-center gap-2 transition-colors rounded-sm"
-                        >
-                            <TruckIcon className="w-3 h-3" />
-                            Assign Vendors
-                        </button>
+                        {isLocked ? (
+                            <div className="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 flex items-center gap-2">
+                                Locked (Cut-off Reached)
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => handleAssignClick()}
+                                className="bg-white text-[#166534] hover:bg-gray-100 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 flex items-center gap-2 transition-colors rounded-sm"
+                            >
+                                <TruckIcon className="w-3 h-3" />
+                                Assign Vendors
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -291,6 +299,7 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
                 order={detailOrder}
                 onClose={() => setDetailOrderId(null)}
                 onAssign={(id) => handleAssignClick([id])}
+                isLocked={isLocked}
             />
 
             {/* Vendor Assignment Side Panel (Level 2) */}

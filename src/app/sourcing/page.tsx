@@ -56,12 +56,18 @@ export default function SourcingPage() {
                         products: (item.items || []).map((prod: any) => ({
                             ...prod,
                             quantity: prod.quantityKg || prod.quantity || 0,
-                            name: prod.name || prod.productName
+                            name: prod.name || prod.productName,
+                            category: prod.category || "General"
                         })),
                         totalAmount: item.totalAmount || 0,
                         status: item.status || "Pending",
                         sourcingStatus: item.sourcingStatus || "Pending",
-                        deliverySlot: item.scheduledTimeSlot || "Unassigned"
+                        deliverySlot: item.scheduledTimeSlot || "Unassigned",
+                        vendor: item.vendorId ? {
+                            name: item.vendorId.businessName,
+                            contact: item.vendorId.phone || item.vendorId.contactPerson,
+                            address: item.vendorId.address?.formattedAddress
+                        } : null
                     }));
                 setOrders(normalized);
             }
@@ -85,6 +91,22 @@ export default function SourcingPage() {
             : o.sourcingStatus === 'Assigned'
     );
 
+    // Locking Logic: Locked if Current Time >= Delivery Date 00:00 AM
+    // i.e., if today is Jan 15, and delivery is Jan 15, it's locked.
+    // if today is Jan 14, and delivery is Jan 15, it's open.
+    const isLocked = (() => {
+        const now = new Date();
+        const deliveryDate = new Date(dateFilter);
+        // Reset deliveryDate to midnight local time to match "00:00 AM" requirement
+        deliveryDate.setHours(0, 0, 0, 0);
+
+        // However, new Date("2025-01-15") is usually UTC. Let's parse safely.
+        const [y, m, d] = dateFilter.split('-').map(Number);
+        const cutoff = new Date(y, m - 1, d, 0, 0, 0, 0); // Local Midnight of delivery date
+
+        return now >= cutoff;
+    })();
+
     return (
         <div className="h-[calc(100vh-64px)] bg-white font-mono text-gray-900 flex flex-col">
             <VendorAssignmentModal
@@ -105,6 +127,11 @@ export default function SourcingPage() {
                     <span className="text-xs text-gray-400">
                         Supply for {dateFilter}
                     </span>
+                    {isLocked && (
+                        <span className="text-[10px] font-bold text-red-600 border border-red-200 bg-red-50 px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+                            Lock Active
+                        </span>
+                    )}
                 </div>
                 <div>
                     <input
@@ -127,6 +154,7 @@ export default function SourcingPage() {
                     }}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
+                    isLocked={isLocked}
                 />
             </div>
         </div>

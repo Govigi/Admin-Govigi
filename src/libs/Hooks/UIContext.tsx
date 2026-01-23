@@ -40,6 +40,9 @@ interface UIContextType {
     isMobileMenuOpen: boolean;
     toggleMobileMenu: () => void;
     closeMobileMenu: () => void;
+    isSidebarCollapsed: boolean;
+    toggleSidebar: () => void;
+    setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -59,6 +62,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
     });
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen((prev) => !prev);
@@ -66,6 +70,14 @@ export function UIProvider({ children }: { children: ReactNode }) {
 
     const closeMobileMenu = () => {
         setIsMobileMenuOpen(false);
+    };
+
+    const toggleSidebar = () => {
+        setIsSidebarCollapsed((prev) => !prev);
+    };
+
+    const setSidebarCollapsed = (collapsed: boolean) => {
+        setIsSidebarCollapsed(collapsed);
     };
 
     const showModal = (
@@ -115,7 +127,10 @@ export function UIProvider({ children }: { children: ReactNode }) {
                 hideToast,
                 isMobileMenuOpen,
                 toggleMobileMenu,
-                closeMobileMenu
+                closeMobileMenu,
+                isSidebarCollapsed,
+                toggleSidebar,
+                setSidebarCollapsed
             }}
         >
             {children}

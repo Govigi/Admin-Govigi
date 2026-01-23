@@ -391,7 +391,11 @@ export default function OrderDetailsPage() {
                                                             </div>
                                                             <div>
                                                                 <div className="text-sm font-bold text-gray-900">{item.name}</div>
-                                                                <div className="text-[10px] text-gray-400 font-mono mt-0.5">{item.productId.slice(-6)}</div>
+                                                                <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                                                                    {typeof item.productId === 'string'
+                                                                        ? item.productId.slice(-6)
+                                                                        : (item.productId?._id ? item.productId._id.slice(-6) : 'N/A')}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>

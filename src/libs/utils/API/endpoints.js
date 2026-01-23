@@ -22,6 +22,11 @@ export const ProductManagementUrl = {
   getProductsStats: backend_url + "/getProductsStats",
 };
 
+export const ProductRequestUrl = {
+  createProductRequest: backend_url + "/createProductRequest",
+  getAllProductRequests: backend_url + "/getAllProductRequests",
+};
+
 export const CategoryManagementUrl = {
   createCategory: backend_url + "/createCategory",
   updateCategory: backend_url + "/updateCategory", // /:id

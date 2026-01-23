@@ -27,11 +27,11 @@ export default function Settings() {
             setLoading(true);
             try {
                 const [walletRes, zoneRes] = await Promise.all([
-                    axios.get(AdminUrl.getSettings.replace("{key}", "wallet_percentage")),
+                    axios.get(AdminUrl.updateSettings + "/wallet"),
                     axios.get(AdminUrl.getSettings.replace("{key}", "delivery_zones"))
                 ]);
 
-                if (walletRes.data.value !== null) setWalletPercentage(Number(walletRes.data.value));
+                if (walletRes.data.percentage !== undefined) setWalletPercentage(Number(walletRes.data.percentage));
                 if (zoneRes.data.value !== null) setZones(zoneRes.data.value); // Assuming stored as JSON array
 
             } catch (error) {
@@ -46,10 +46,14 @@ export default function Settings() {
     const saveSetting = async (key: string, value: any) => {
         setSaving(true);
         try {
-            await axios.put(AdminUrl.updateSettings, { key, value });
+            if (key === "wallet_percentage") {
+                await axios.put(AdminUrl.updateSettings + "/wallet", { percentage: value });
+            } else {
+                await axios.put(AdminUrl.updateSettings, { key, value });
+            }
             alert(`${key === 'wallet_percentage' ? 'Wallet' : 'Zone'} settings saved!`);
-        } catch (error) {
-            alert("Failed to save settings");
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Failed to save settings");
         } finally {
             setSaving(false);
         }
