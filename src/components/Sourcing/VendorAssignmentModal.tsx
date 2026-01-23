@@ -27,21 +27,33 @@ export default function VendorAssignmentModal({ isOpen, onClose, selectedOrders,
 
     const fetchVendors = async () => {
         try {
-            // Determine query params based on first selected order
-            let query = "";
-            const firstOrder = selectedOrders[0];
+            // Pass orderIds to backend
+            const orderIds = selectedOrders.map(o => o.id).join(',');
 
-            // We need coordinates. If order has addressId populated with location, use it.
-            // Assuming 'addressId' in selectedOrders is the populated object from getAllOrders
-            // and it has 'location.coordinates'
+            // Extract Categories from Orders (for Smart Matching)
+            // Flatten all products from all selected orders and get unique categories
+            const categoriesSet = new Set<string>();
+            selectedOrders.forEach(o => {
+                (o.products || []).forEach((p: any) => {
+                    if (p.category) categoriesSet.add(p.category);
+                });
+            });
+            const categories = Array.from(categoriesSet).filter(Boolean).join(',');
 
-            // Let's check how orders are passed. 
-            // If we don't have coords easily, we just fetch all vendors (backend handles empty query)
+            // Extract Location for Distance Calculation
+            // We'll use the first order's location as the reference.
+            // If missing (legacy data), fallback to Hyderabad center for demo purposes.
+            let lat = "", lng = "";
+            if (selectedOrders.length > 0 && selectedOrders[0].address?.location?.coordinates) {
+                lng = String(selectedOrders[0].address.location.coordinates[0]);
+                lat = String(selectedOrders[0].address.location.coordinates[1]);
+            } else {
+                // Default Demo Location (Hyderabad)
+                lat = "17.4485";
+                lng = "78.3741";
+            }
 
-            // NOTE: In OrdersPage, we normalize data. 'addressId' might just be ID or object.
-            // If it's fully populated, we might access coordinates.
-            // For now, let's fetch all (no coords) to match user request "if no enough data... admin will assign"
-            // But if we wanted, key is: firstOrder?.address?.location?.coordinates
+            const query = `?orderIds=${orderIds}&categories=${encodeURIComponent(categories)}&lat=${lat}&lng=${lng}`;
 
             const res = await fetch(SourcingUrl.getNearbyVendors + query);
             const data = await res.json();
@@ -127,14 +139,37 @@ export default function VendorAssignmentModal({ isOpen, onClose, selectedOrders,
                                     key={vendor._id}
                                     onClick={() => setSelectedVendorId(vendor._id)}
                                     className={`border-2 p-4 cursor-pointer transition-all ${selectedVendorId === vendor._id
-                                            ? "border-[#10b981] bg-green-50"
-                                            : "border-gray-200 hover:border-black"
+                                        ? "border-[#10b981] bg-green-50"
+                                        : "border-gray-200 hover:border-black"
                                         }`}
                                 >
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-bold uppercase font-mono text-sm">{vendor.businessName}</h3>
-                                            <div className="flex items-center gap-1 text-gray-500 mt-1">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold uppercase font-mono text-sm">{vendor.businessName}</h3>
+
+                                                {/* Smart Recommendations Tags */}
+                                                {(vendor.recommendationTags || []).map((tag: string, idx: number) => {
+                                                    let color = "bg-gray-100 text-gray-600";
+                                                    if (tag.includes("Full")) color = "bg-green-100 text-green-700";
+                                                    if (tag.includes("Partial")) color = "bg-yellow-100 text-yellow-700";
+                                                    if (tag.includes("Mismatch")) color = "bg-red-100 text-red-700";
+                                                    return (
+                                                        <span key={idx} className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${color}`}>
+                                                            {tag}
+                                                        </span>
+                                                    );
+                                                })}
+
+                                                {/* Distance Tag */}
+                                                {vendor.distance !== null && vendor.distance !== undefined && (
+                                                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">
+                                                        {vendor.distance} km away
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-1 text-gray-500">
                                                 <MapPinIcon className="h-3 w-3" />
                                                 <span className="text-xs font-mono truncate max-w-[300px]">
                                                     {vendor.address?.formattedAddress || "No Address"}
@@ -164,8 +199,8 @@ export default function VendorAssignmentModal({ isOpen, onClose, selectedOrders,
                         onClick={handleAssign}
                         disabled={!selectedVendorId}
                         className={`px-6 py-3 border-2 text-xs font-bold font-mono uppercase tracking-widest text-white transition-transform active:translate-y-0.5 ${selectedVendorId
-                                ? "bg-black border-black hover:bg-gray-800"
-                                : "bg-gray-300 border-gray-300 cursor-not-allowed"
+                            ? "bg-black border-black hover:bg-gray-800"
+                            : "bg-gray-300 border-gray-300 cursor-not-allowed"
                             }`}
                     >
                         Assign Vendor
