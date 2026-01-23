@@ -22,6 +22,11 @@ export const ProductManagementUrl = {
   getProductsStats: backend_url + "/getProductsStats",
 };
 
+export const ProductRequestUrl = {
+  createProductRequest: backend_url + "/createProductRequest",
+  getAllProductRequests: backend_url + "/getAllProductRequests",
+};
+
 export const CategoryManagementUrl = {
   createCategory: backend_url + "/createCategory",
   updateCategory: backend_url + "/updateCategory", // /:id
@@ -74,6 +79,13 @@ export const AdminUrl = {
   // Settings
   getSettings: backend_url + "/admin/settings/{key}",
   updateSettings: backend_url + "/admin/settings",
+};
+
+export const GoogleMapsUrl = {
+  autocomplete: backend_url + "/maps/autocomplete",
+  placeDetails: backend_url + "/maps/place-details",
+  geocode: backend_url + "/maps/geocode",
+  reverseGeocode: backend_url + "/maps/reverse-geocode",
 };
 
 
