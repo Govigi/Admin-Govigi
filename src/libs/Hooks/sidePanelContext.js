@@ -14,7 +14,6 @@ export function SidePanelProvider({ children }) {
 
   const closeSidePanel = useCallback(() => {
     setIsOpen(false);
-    // keep data for a moment if needed; clear immediately
     setData(null);
   }, []);
 
