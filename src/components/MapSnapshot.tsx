@@ -10,21 +10,21 @@ type MapSnapshotProps = {
 const LIBRARIES: [] = [];
 
 export default function MapSnapshot({ apiKey, lat, lng }: MapSnapshotProps) {
-    const { isLoaded } = useJsApiLoader({
-        id: "google-map-script",
-        googleMapsApiKey: apiKey,
-        libraries: LIBRARIES
-    });
+    // const { isLoaded } = useJsApiLoader({
+    //     id: "google-map-script",
+    //     googleMapsApiKey: apiKey,
+    //     libraries: LIBRARIES
+    // });
 
     const center = { lat, lng };
 
-    if (!isLoaded) {
-        return (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center animate-pulse">
-                <span className="text-xs text-gray-400 font-mono">Loading Map Preview...</span>
-            </div>
-        );
-    }
+    // if (!isLoaded) {
+    //     return (
+    //         <div className="w-full h-full bg-gray-200 flex items-center justify-center animate-pulse">
+    //             <span className="text-xs text-gray-400 font-mono">Loading Map Preview...</span>
+    //         </div>
+    //     );
+    // }
 
     return (
         <GoogleMap
@@ -32,13 +32,13 @@ export default function MapSnapshot({ apiKey, lat, lng }: MapSnapshotProps) {
             center={center}
             zoom={16}
             options={{
-                disableDefaultUI: true,
-                draggable: false,
-                gestureHandling: "none",
-                disableDoubleClickZoom: true,
+                disableDefaultUI: false,
+                draggable: true,
+                gestureHandling: "greedy",
+                disableDoubleClickZoom: false,
                 keyboardShortcuts: false,
-                clickableIcons: false,
-                streetViewControl: false,
+                clickableIcons: true,
+                streetViewControl: true,
             }}
         >
             <Marker position={center} />

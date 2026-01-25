@@ -8,6 +8,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useUI } from "@/src/libs/Hooks/UIContext";
+import { CategoryManagementUrl } from "@/src/libs/utils/API/endpoints";
+
 
 const customStyles = {
   table: {
@@ -101,7 +103,7 @@ const columns = [
     cell: (row: any) => <ActionsMenu row={row} />,
     ignoreRowClick: true,
     width: "80px",
-    right: true,
+    right: "true",
   },
 ];
 
@@ -151,11 +153,38 @@ function ActionsMenu({ row }: { row: any }) {
       () => {
         // Add delete logic here
         console.log("Deleted:", row.id);
+        deleteCategory(row.id);
+        
         showToast("Category deleted successfully", "success");
       }
     );
     setOpen(false);
   };
+
+  const deleteCategory = async (catId: string) => {
+    try {
+        
+        const res = await fetch(
+            `${CategoryManagementUrl.deleteCategory}/${catId}`,
+            {
+                method: "DELETE",
+            }
+        );
+
+        const json = await res.json();
+
+        if (!res.ok) {
+            throw new Error(json.message || "Failed to delete category");
+        }
+
+        showToast("Category deleted successfully.", "success");
+
+    } catch (err: any) {
+        console.error("Error deleting category:", err);
+        showToast(err.message || "Failed to delete category.", "error");
+    } 
+};
+
 
   const Dropdown = (
     <div
