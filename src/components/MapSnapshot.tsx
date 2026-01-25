@@ -32,13 +32,13 @@ export default function MapSnapshot({ apiKey, lat, lng }: MapSnapshotProps) {
             center={center}
             zoom={16}
             options={{
-                disableDefaultUI: true,
-                draggable: false,
-                gestureHandling: "none",
-                disableDoubleClickZoom: true,
+                disableDefaultUI: false,
+                draggable: true,
+                gestureHandling: "greedy",
+                disableDoubleClickZoom: false,
                 keyboardShortcuts: false,
-                clickableIcons: false,
-                streetViewControl: false,
+                clickableIcons: true,
+                streetViewControl: true,
             }}
         >
             <Marker position={center} />

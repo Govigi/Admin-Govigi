@@ -30,6 +30,7 @@ export const ProductRequestUrl = {
 export const CategoryManagementUrl = {
   createCategory: backend_url + "/createCategory",
   updateCategory: backend_url + "/updateCategory", // /:id
+  deleteCategory: backend_url + "/deleteCategory", // /:id
   getAllCategoriesStats: backend_url + "/getAllCategoriesStats",
   getAllCategories: backend_url + "/getAllCategories",
 };

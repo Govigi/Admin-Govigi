@@ -13,6 +13,27 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLoading } from "@/src/libs/Hooks/LoadingContext";
 import { useUI } from "@/src/libs/Hooks/UIContext";
 
+
+function InputField({ label, value, onChange, placeholder, type = "text", disabled = false, required = false }: any) {
+
+
+    return(<div className="mb-4">
+            <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
+            <input
+                type={type}
+                value={value}
+                onChange={onChange}
+                disabled={false}
+                required={required}
+                placeholder={ placeholder?placeholder:''}
+                className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors placeholder-gray-300 font-mono `}
+            />
+        </div>);
+    
+}
+
+
+
 export default function AddCategory() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -21,6 +42,7 @@ export default function AddCategory() {
     const isEditMode = !!id;
     const isViewMode = mode === "view";
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { showLoader, hideLoader } = useLoading ? useLoading() : { showLoader: () => { }, hideLoader: () => { } };
     const { showToast } = useUI();
 
@@ -152,20 +174,7 @@ export default function AddCategory() {
         }
     };
 
-    const InputField = ({ label, value, onChange, placeholder, type = "text", disabled = false, required = false }: any) => (
-        <div className="mb-4">
-            <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 font-mono">{label}</label>
-            <input
-                type={type}
-                value={value}
-                onChange={onChange}
-                disabled={disabled || isViewMode}
-                required={required}
-                placeholder={isViewMode ? "" : placeholder}
-                className={`block w-full border-b border-gray-300 bg-transparent py-2 px-0 text-sm focus:border-black focus:ring-0 focus:outline-none transition-colors placeholder-gray-300 font-mono ${disabled || isViewMode ? "text-gray-500 cursor-not-allowed" : "text-black"}`}
-            />
-        </div>
-    );
+
 
     return (
         <div className="min-h-screen bg-white p-6 md:p-8 font-mono text-gray-900">
