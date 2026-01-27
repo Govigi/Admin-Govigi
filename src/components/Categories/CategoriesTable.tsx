@@ -67,7 +67,7 @@ const customStyles = {
   },
 };
 
-const columns = [
+const getColumns = (onRefresh: () => void) => [
   {
     name: "Category",
     selector: (row: any) => row.name,
@@ -100,14 +100,13 @@ const columns = [
   },
   {
     name: "Actions",
-    cell: (row: any) => <ActionsMenu row={row} />,
+    cell: (row: any) => <ActionsMenu row={row} onRefresh={onRefresh} />,
     ignoreRowClick: true,
     width: "80px",
-    right: "true",
   },
 ];
 
-function ActionsMenu({ row }: { row: any }) {
+function ActionsMenu({ row, onRefresh }: { row: any, onRefresh: () => void }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const iconRef = useRef<HTMLDivElement>(null);
@@ -154,8 +153,6 @@ function ActionsMenu({ row }: { row: any }) {
         // Add delete logic here
         console.log("Deleted:", row.id);
         deleteCategory(row.id);
-        
-        showToast("Category deleted successfully", "success");
       }
     );
     setOpen(false);
@@ -163,27 +160,28 @@ function ActionsMenu({ row }: { row: any }) {
 
   const deleteCategory = async (catId: string) => {
     try {
-        
-        const res = await fetch(
-            `${CategoryManagementUrl.deleteCategory}/${catId}`,
-            {
-                method: "DELETE",
-            }
-        );
 
-        const json = await res.json();
-
-        if (!res.ok) {
-            throw new Error(json.message || "Failed to delete category");
+      const res = await fetch(
+        `${CategoryManagementUrl.deleteCategory}/${catId}`,
+        {
+          method: "DELETE",
         }
+      );
 
-        showToast("Category deleted successfully.", "success");
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to delete category");
+      }
+
+      showToast("Category deleted successfully.", "success");
+      if (onRefresh) onRefresh();
 
     } catch (err: any) {
-        console.error("Error deleting category:", err);
-        showToast(err.message || "Failed to delete category.", "error");
-    } 
-};
+      console.error("Error deleting category:", err);
+      showToast(err.message || "Failed to delete category.", "error");
+    }
+  };
 
 
   const Dropdown = (
@@ -221,7 +219,9 @@ function ActionsMenu({ row }: { row: any }) {
   );
 }
 
-export default function CategoriesTable({ categories }: { categories: any[] }) {
+export default function CategoriesTable({ categories, onRefresh }: { categories: any[], onRefresh: () => void }) {
+  const columns = React.useMemo(() => getColumns(onRefresh), [onRefresh]);
+
   return (
     <div className="border border-gray-200">
       <DataTable
