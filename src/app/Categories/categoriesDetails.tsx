@@ -178,7 +178,7 @@ export default function CategoriesDetails() {
       </div>
 
       <div className="border border-gray-200 rounded-none p-0">
-        <CategoriesTable categories={filteredCategories} />
+        <CategoriesTable categories={filteredCategories} onRefresh={fetchCategories} />
       </div>
     </div>
   );
