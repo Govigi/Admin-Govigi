@@ -5,6 +5,7 @@ import { OrderSummaryUrl } from "../../libs/utils/API/endpoints";
 import { useRouter } from "next/navigation";
 import { useLoading } from "@/src/libs/Hooks/LoadingContext";
 import { useUI } from "@/src/libs/Hooks/UIContext";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,11 @@ export default function Login() {
   const router = useRouter();
   const { showLoader, hideLoader } = useLoading();
   const { showToast } = useUI();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,14 +87,27 @@ export default function Login() {
               <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">
                 Password
               </label>
-              <input
-                type="password"
-                className="block w-full border-b-2 border-gray-200 bg-transparent py-3 px-0 text-sm focus:border-black focus:outline-none transition-colors placeholder-gray-300 font-mono text-black"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="block w-full border-b-2 border-gray-200 bg-transparent py-3 px-0 text-sm focus:border-black focus:outline-none transition-colors placeholder-gray-300 font-mono text-black"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5 text-gray-500" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

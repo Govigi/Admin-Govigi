@@ -40,7 +40,14 @@ export default function OrdersPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
-            const res = await fetch(OrderSummaryUrl.getOrderDetails || "/api/orders", {
+            // Hardcoding URL for debugging purposes to bypass potential config/import issues
+            const url = "http://localhost:8000/getAllOrders";
+            // const url = OrderSummaryUrl.getOrderDetails; 
+
+            console.log("Fetching orders from URL:", url);
+            console.log("Using token:", token ? "Token present" : "No token");
+
+            const res = await fetch(url, {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
@@ -49,8 +56,6 @@ export default function OrdersPage() {
 
             if (res.ok) {
                 const data = await res.json();
-                console.log("raw data:", data);
-
                 const normalized = data
                     .filter((item: any) => {
                         const targetDate = item.scheduledDate || item.createdAt;
