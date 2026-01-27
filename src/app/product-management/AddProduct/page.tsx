@@ -73,7 +73,7 @@ export default function AddProduct() {
     unit: "kg",
     status: "active",
     image: null as File | null,
-    imageUrl: "", // For existing image URL
+    imageUrl: "",
   });
 
   const [categories, setCategories] = useState<any[]>([]);

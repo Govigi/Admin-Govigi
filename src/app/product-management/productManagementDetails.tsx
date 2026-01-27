@@ -17,7 +17,7 @@ import {
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 export default function ProductManagementDetails() {
@@ -46,8 +46,13 @@ export default function ProductManagementDetails() {
     setCurrentPage(1);
   }, [statusFilter, categoryFilter]);
 
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     document.title = "Product Management - Admin | Govigi";
+    // Invalidate queries to ensure fresh data when returning from Add/Edit page
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+    queryClient.invalidateQueries({ queryKey: ["productStats"] });
   }, []);
 
   // --- QUERIES ---

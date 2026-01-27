@@ -85,10 +85,13 @@ export default function Sidebar() {
       ],
     },
     {
-      type: "link",
+      type: "menu",
       name: "Customers",
       icon: UserGroupIcon,
-      path: "/customers-dashboard",
+      subItems: [
+        { name: "All Customers", path: "/customers-dashboard" },
+        { name: "Customer Segments", path: "/customers-dashboard/segments" },
+      ],
     },
     {
       type: "menu",
