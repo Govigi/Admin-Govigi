@@ -14,6 +14,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-govigi-green: #10b981;
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
   --color-border-sharp: var(--border-sharp);
@@ -25,7 +26,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .material-symbols-outlined {
