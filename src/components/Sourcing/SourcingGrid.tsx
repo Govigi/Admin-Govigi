@@ -69,13 +69,14 @@ const customStyles = {
 interface SourcingGridProps {
     orders: any[];
     loading: boolean;
-    onAssignVendor: (selectedOrders: any[]) => void;
+    onAssignVendor?: (selectedOrders: any[]) => void;
+    onRefresh: () => void;
     activeTab: 'pending' | 'assigned';
     onTabChange: (tab: 'pending' | 'assigned') => void;
     isLocked?: boolean;
 }
 
-export default function SourcingGrid({ orders, loading, onAssignVendor, activeTab, onTabChange, isLocked = false }: SourcingGridProps) {
+export default function SourcingGrid({ orders, loading, onRefresh, activeTab, onTabChange, isLocked = false }: SourcingGridProps) {
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [toggledClearRows, setToggleClearRows] = useState(false);
     const [detailOrderId, setDetailOrderId] = useState<string | null>(null); // For Side Panel
@@ -107,7 +108,7 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
         setToggleClearRows(!toggledClearRows);
         setSelectedOrderIds([]);
         setIsAssignPanelOpen(false);
-        window.location.reload();
+        onRefresh();
     };
 
     const filteredOrders = useMemo(() => {

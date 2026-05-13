@@ -27,11 +27,9 @@ export default function VendorAssignmentModal({ isOpen, onClose, selectedOrders,
 
     const fetchVendors = async () => {
         try {
-            // Pass orderIds to backend
+            const token = localStorage.getItem("admin_token");
             const orderIds = selectedOrders.map(o => o.id).join(',');
 
-            // Extract Categories from Orders (for Smart Matching)
-            // Flatten all products from all selected orders and get unique categories
             const categoriesSet = new Set<string>();
             selectedOrders.forEach(o => {
                 (o.products || []).forEach((p: any) => {
@@ -40,22 +38,20 @@ export default function VendorAssignmentModal({ isOpen, onClose, selectedOrders,
             });
             const categories = Array.from(categoriesSet).filter(Boolean).join(',');
 
-            // Extract Location for Distance Calculation
-            // We'll use the first order's location as the reference.
-            // If missing (legacy data), fallback to Hyderabad center for demo purposes.
             let lat = "", lng = "";
             if (selectedOrders.length > 0 && selectedOrders[0].address?.location?.coordinates) {
                 lng = String(selectedOrders[0].address.location.coordinates[0]);
                 lat = String(selectedOrders[0].address.location.coordinates[1]);
             } else {
-                // Default Demo Location (Hyderabad)
                 lat = "17.4485";
                 lng = "78.3741";
             }
 
             const query = `?orderIds=${orderIds}&categories=${encodeURIComponent(categories)}&lat=${lat}&lng=${lng}`;
 
-            const res = await fetch(SourcingUrl.getNearbyVendors + query);
+            const res = await fetch(SourcingUrl.getNearbyVendors + query, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             const data = await res.json();
 
             if (Array.isArray(data)) {
@@ -74,9 +70,13 @@ export default function VendorAssignmentModal({ isOpen, onClose, selectedOrders,
 
         try {
             showLoader("Assigning Orders...");
+            const token = localStorage.getItem("admin_token");
             const res = await fetch(SourcingUrl.assignOrders, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     vendorId: selectedVendorId,
                     orderIds: selectedOrders.map(o => o.id)

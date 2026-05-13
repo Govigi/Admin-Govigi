@@ -2,22 +2,25 @@
 
 import React from "react";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  Cog6ToothIcon,
   BellIcon,
-  InformationCircleIcon,
   UserIcon,
   Bars3Icon,
+  ChevronDownIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 
-import Breadcrumbs from "./Global/Breadcrumbs";
 import { useUI } from "../libs/Hooks/UIContext";
 
 export default function TopBar() {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<any>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchPlaceholder = pathname.startsWith("/product-management")
+    ? "Search by product name, category, vendor..."
+    : "Search anything...";
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -45,59 +48,66 @@ export default function TopBar() {
   const { toggleMobileMenu } = useUI();
 
   return (
-    <header className="relative h-16 border-b border-gray-200 bg-white px-4 md:px-6 py-4 text-gray-800 flex items-center justify-between">
-      {/* Left Side: Hamburger & Breadcrumbs */}
-      <div className="flex items-center gap-3 md:gap-0 overflow-hidden">
-        {/* Hamburger Menu (Mobile Only) */}
+    <header className="sticky top-0 z-30 h-16 border-b border-gray-200 bg-white/95 px-4 text-gray-900 backdrop-blur md:px-8">
+      <div className="grid h-full grid-cols-[auto_1fr_auto] items-center gap-4">
         <button
           onClick={toggleMobileMenu}
-          className="md:hidden p-1 text-gray-500 hover:text-gray-700"
+          aria-label="Open navigation"
+          className="rounded-md p-2 text-gray-700 transition hover:bg-gray-100 md:hidden"
         >
           <Bars3Icon className="h-6 w-6" />
         </button>
 
-        <div className="overflow-hidden">
-          <Breadcrumbs />
+        <div className="hidden md:block">
+          <button
+            aria-label="Toggle menu"
+            className="rounded-md p-2 text-gray-900 transition hover:bg-gray-100"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
         </div>
-      </div>
 
-      {/* Right Side: Icons */}
-      <div className="flex items-center justify-end gap-3 md:gap-7 md:mr-12 shrink-0">
-        <button
-          aria-label="Settings"
-          className="hover:text-blue-600 transition-colors hidden md:block" // Hidden on small mobile to save space if needed, or keep
-        >
-          <Cog6ToothIcon className="h-6 w-6" />
-        </button>
+        <label className="relative mx-auto hidden w-full max-w-[520px] sm:block">
+          <MagnifyingGlassIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+          <input
+            type="search"
+            placeholder={searchPlaceholder}
+            className="h-11 w-full rounded-lg border border-gray-200 bg-gray-50/70 pl-12 pr-4 text-sm outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+          />
+        </label>
 
-        <button
-          aria-label="Notifications"
-          className="hover:text-blue-600 transition-colors"
-        >
-          <BellIcon className="h-6 w-6" />
-        </button>
-
-        <button
-          aria-label="Information"
-          className="hover:text-blue-600 transition-colors hidden md:block"
-        >
-          <InformationCircleIcon className="h-6 w-6" />
-        </button>
+        <div className="flex items-center justify-end gap-4">
+          <button
+            aria-label="Notifications"
+            className="relative rounded-md p-2 text-gray-700 transition hover:bg-gray-100"
+          >
+            <BellIcon className="h-6 w-6" />
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-white">
+              3
+            </span>
+          </button>
 
         <div className="relative" ref={popupRef}>
           <button
             aria-label="User menu"
-            className="cursor-pointer text-green-600 hover:text-green-700 transition-colors"
+              className="flex items-center gap-3 rounded-lg px-1 py-1 transition hover:bg-gray-50"
             onClick={() => setShowPopup((v) => !v)}
           >
-            <UserIcon className="h-6 w-6" />
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-emerald-50 text-emerald-700">
+                <UserIcon className="h-5 w-5" />
+              </span>
+              <span className="hidden text-left md:block">
+                <span className="block text-sm font-semibold leading-5 text-gray-900">Admin</span>
+                <span className="block text-xs text-gray-500">Super Admin</span>
+              </span>
+              <ChevronDownIcon className="hidden h-4 w-4 text-gray-500 md:block" />
           </button>
 
           {showPopup && (
-            <div className="absolute right-0 mt-2 w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
+              <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
               <button
                 onClick={handleLogout}
-                className="block w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 rounded-md"
+                  className="block w-full rounded-md px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
               >
                 Logout
               </button>
@@ -105,6 +115,7 @@ export default function TopBar() {
           )}
         </div>
       </div>
-    </header >
+      </div>
+    </header>
   );
 }
