@@ -66,14 +66,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 function LayoutContent({ isClient, showLayout, pathname, children }: { isClient: boolean, showLayout: boolean, pathname: string, children: React.ReactNode }) {
     const { isSidebarCollapsed } = useUI();
+    const shouldShowShell = isClient && showLayout && pathname !== "/login";
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden print:h-auto print:overflow-visible">
             <div className="contents print:hidden">
-                {isClient && showLayout && pathname !== "/login" && <Sidebar />}
+                {shouldShowShell && <Sidebar />}
             </div>
 
             <div className={`flex-1 flex flex-col transition-all duration-300 ${pathname !== "/login" ? (isSidebarCollapsed ? "ml-0 md:ml-20 print:ml-0" : "ml-0 md:ml-64 print:ml-0") : ""}`}>
+                {shouldShowShell && <TopBar />}
                 <main className={`flex-1 overflow-y-auto print:overflow-visible print:h-auto ${pathname !== "/login" ? "print:mt-0" : ""}`}>{children}</main>
             </div>
             <div className="print:hidden">

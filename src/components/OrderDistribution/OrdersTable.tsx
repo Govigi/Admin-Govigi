@@ -7,9 +7,8 @@ interface CategoryItem {
     icon: string;
     items: string;
     vendor: string;
-    distance: string;
+    vendorId: string;
     status: "assigned" | "in_progress" | "pending";
-    reliability?: string;
 }
 
 interface Order {
@@ -17,7 +16,6 @@ interface Order {
     orderRef: string;
     customer: string;
     location: string;
-    distance: string;
     categories: string[];
     moreCount: number;
     assignedCount: number;
@@ -123,7 +121,7 @@ export default function OrdersTable({ orders, loading }: OrdersTableProps) {
                                     <td className="p-5">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-[#111827] tracking-tight">{order.customer}</span>
-                                            <span className="text-[10px] font-semibold text-[#6B7280] uppercase">{order.location} - {order.distance}</span>
+                                            <span className="text-[10px] font-semibold text-[#6B7280] uppercase">{order.location}</span>
                                         </div>
                                     </td>
                                     <td className="p-5">
@@ -186,7 +184,7 @@ export default function OrdersTable({ orders, loading }: OrdersTableProps) {
                                                                         <div className="flex flex-col">
                                                                             <span className="text-xs font-bold text-[#111827]">{cat.vendor}</span>
                                                                             <span className={`text-[10px] font-bold uppercase tracking-tight ${cat.status === 'assigned' ? 'text-green-600' : cat.status === 'in_progress' ? 'text-amber-600' : 'text-[#6B7280]'}`}>
-                                                                                {cat.distance} {cat.reliability && `• ${cat.reliability}`}
+                                                                                {cat.status === 'assigned' ? 'Assigned' : cat.status === 'in_progress' ? 'In Progress' : 'Pending'}
                                                                             </span>
                                                                         </div>
                                                                     </td>

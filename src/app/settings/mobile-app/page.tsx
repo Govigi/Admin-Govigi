@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-// Since I don't know the exact axios setup, I'll use fetch or assume a global configured instance if available, 
-// but for safety in a new file, I'll use standard fetch with the backend URL.
-// Assuming backend is running on localhost:8000 based on app.js log "Server started at port: 8000"
-
-const BACKEND_URL = "http://localhost:8000";
 
 export default function MobileAppSettings() {
     const [config, setConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
+
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
     useEffect(() => {
         fetchConfig();

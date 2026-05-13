@@ -52,10 +52,10 @@ export default function VendorAssignmentPanel({ isOpen, onClose, selectedOrders,
 
     const fetchVendors = async (cats: string[]) => {
         try {
+            const token = localStorage.getItem("admin_token");
             const orderIds = selectedOrders.map(o => o.id).join(',');
             const catString = cats.join(',');
 
-            // Default Demo Location (Hyderabad) or Real
             let lat = "17.4485", lng = "78.3741";
             if (selectedOrders.length > 0 && selectedOrders[0].address?.location?.coordinates) {
                 lng = String(selectedOrders[0].address.location.coordinates[0]);
@@ -63,7 +63,9 @@ export default function VendorAssignmentPanel({ isOpen, onClose, selectedOrders,
             }
 
             const query = `?orderIds=${orderIds}&categories=${encodeURIComponent(catString)}&lat=${lat}&lng=${lng}`;
-            const res = await fetch(SourcingUrl.getNearbyVendors + query);
+            const res = await fetch(SourcingUrl.getNearbyVendors + query, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             const data = await res.json();
 
             if (Array.isArray(data)) {
@@ -90,28 +92,35 @@ export default function VendorAssignmentPanel({ isOpen, onClose, selectedOrders,
 
         try {
             showLoader("Processing Assignments...");
+            const token = localStorage.getItem("admin_token");
 
-            // We need to make SEQUENTIAL or PARALLEL calls for each category-vendor pair
-            // Because our backend API takes `vendorId` and `categories` list.
+            const results = await Promise.all(
+                Object.entries(assignments).map(async ([category, vendorId]) => {
+                    const res = await fetch(SourcingUrl.assignOrders, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            vendorId,
+                            orderIds: selectedOrders.map(o => o.id),
+                            categories: [category]
+                        })
+                    });
+                    return { category, ok: res.ok, data: await res.json() };
+                })
+            );
 
-            const promises = Object.entries(assignments).map(async ([category, vendorId]) => {
-                return fetch(SourcingUrl.assignOrders, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        vendorId: vendorId,
-                        orderIds: selectedOrders.map(o => o.id),
-                        categories: [category] // Assign just this category
-                    })
-                });
-            });
-
-            await Promise.all(promises);
-
-            showToast(`Successfully assigned orders!`, "success");
-            onAssignSuccess();
-            onClose();
-
+            const failed = results.filter(r => !r.ok);
+            if (failed.length === 0) {
+                showToast(`Successfully assigned all categories!`, "success");
+                onAssignSuccess();
+                onClose();
+            } else {
+                const failedNames = failed.map(f => f.category).join(", ");
+                showToast(`Failed to assign: ${failedNames}. Please try again.`, "error");
+            }
         } catch (error) {
             showToast("Error assigning orders.", "error");
         } finally {
