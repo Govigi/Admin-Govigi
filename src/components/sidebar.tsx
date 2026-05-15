@@ -55,7 +55,15 @@ const navItems: NavItem[] = [
       { name: "Product Requests", path: "/product-requests" },
     ],
   },
-  { name: "Vendors", path: "/vendors", icon: UserGroupIcon },
+  {
+    name: "Vendors",
+    path: "/vendors",
+    icon: UserGroupIcon,
+    subItems: [
+      { name: "Manage Vendors", path: "/vendors" },
+      { name: "Vendor Submissions", path: "/vendor-requests" },
+    ],
+  },
   { name: "Users", path: "/customers-dashboard", icon: UsersIcon },
   { name: "Delivery Partners", path: "/drivers", icon: TruckIcon },
   { name: "Payments", path: "/finance/payments", icon: BanknotesIcon },

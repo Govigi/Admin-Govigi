@@ -53,6 +53,24 @@ export default function ProductsTable({
     setSelectedRows(prev => prev.includes(id) ? prev.filter(rid => rid !== id) : [...prev, id]);
   };
 
+  const paginationItems = useMemo(() => {
+    const total = totalPages;
+    if (total <= 7) return Array.from({ length: total }, (_, idx) => idx + 1);
+
+    const pages: Array<number | string> = [1];
+    const left = Math.max(2, currentPage - 1);
+    const right = Math.min(total - 1, currentPage + 1);
+
+    if (left > 2) pages.push("left-ellipsis");
+    for (let page = left; page <= right; page += 1) {
+      pages.push(page);
+    }
+    if (right < total - 1) pages.push("right-ellipsis");
+    pages.push(total);
+
+    return pages;
+  }, [currentPage, totalPages]);
+
   return (
     <div className="w-full bg-white">
       <div className="overflow-x-auto">
@@ -120,7 +138,9 @@ export default function ProductsTable({
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-0.5 bg-gray-50 text-[9px] font-bold border border-gray-100 rounded uppercase tracking-wider text-gray-500">
-                      {row.category || "General"}
+                      {typeof row.category === "object"
+                        ? row.category.categoryName || row.category.name || row.category._id || "General"
+                        : row.category || "General"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -159,28 +179,65 @@ export default function ProductsTable({
       </div>
 
       {/* Pagination */}
-      <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Showing {start} - {end} of {paginationTotalRows} Items
-        </p>
-        <div className="flex items-center gap-2">
-          <button 
-            disabled={currentPage <= 1}
-            onClick={() => onChangePage?.(currentPage - 1)}
-            className="p-2 border border-gray-200 text-gray-400 hover:text-black disabled:opacity-30 disabled:hover:border-gray-200 transition-all"
-          >
-            <ChevronLeftIcon className="w-4 h-4" />
-          </button>
-          <div className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900">
-            Page {currentPage} of {totalPages}
+      <div className="px-6 py-4 border-t border-gray-100 bg-white">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Showing {start} - {end} of {paginationTotalRows} items
+          </p>
+          <div className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
+              <span>Page</span>
+              <span className="font-black text-gray-900">{currentPage}</span>
+              <span>of</span>
+              <span className="font-black text-gray-900">{totalPages}</span>
+            </div>
+            <div className="flex items-center gap-1 overflow-x-auto">
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => onChangePage?.(1)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                First
+              </button>
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => onChangePage?.(currentPage - 1)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+              {paginationItems.map((item) => (
+                typeof item === "string" ? (
+                  <span key={item} className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => onChangePage?.(item)}
+                    className={`px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest transition-all ${item === currentPage ? "bg-black text-white" : "text-gray-500 hover:border-black hover:text-black"}`}
+                    disabled={item === currentPage}
+                  >
+                    {item}
+                  </button>
+                )
+              ))}
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => onChangePage?.(currentPage + 1)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => onChangePage?.(totalPages)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                Last
+              </button>
+            </div>
           </div>
-          <button 
-            disabled={currentPage >= totalPages}
-            onClick={() => onChangePage?.(currentPage + 1)}
-            className="p-2 border border-gray-200 text-gray-400 hover:text-black disabled:opacity-30 disabled:hover:border-gray-200 transition-all"
-          >
-            <ChevronRightIcon className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </div>

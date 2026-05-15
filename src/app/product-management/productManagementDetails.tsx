@@ -20,7 +20,7 @@ import axios from "axios";
 export default function ProductManagementDetails() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [perPage] = useState(10);
+  const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -80,7 +80,21 @@ export default function ProductManagementDetails() {
     },
   });
 
-  const products = productsData?.products || [];
+  const categoryMap = useMemo(() => {
+    return rawCategories.reduce((acc: Record<string, string>, cat: any) => {
+      const name = cat.categoryName || cat.name;
+      if (name) {
+        if (cat._id) acc[cat._id] = name;
+        acc[name] = name;
+      }
+      return acc;
+    }, {});
+  }, [rawCategories]);
+
+  const products = (productsData?.products || []).map((product: any) => ({
+    ...product,
+    category: categoryMap[product.category] || product.category || 'General',
+  }));
   const totalRows = productsData?.total || 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
 
@@ -176,6 +190,19 @@ export default function ProductManagementDetails() {
               <option value="all">ALL STATUS</option>
               <option value="active">ACTIVE</option>
               <option value="inactive">INACTIVE</option>
+            </select>
+            <select
+              value={perPage}
+              onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest bg-white focus:outline-none focus:border-black"
+            >
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
             </select>
             <button 
               onClick={resetFilters}
