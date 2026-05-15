@@ -341,7 +341,7 @@ export default function AddProduct() {
                 >
                   <option value="">SELECT CATEGORY</option>
                   {categories.map((cat: any) => (
-                    <option key={cat._id} value={cat._id || cat.categoryName || cat.name}>
+                    <option key={cat._id} value={cat.categoryName || cat.name || cat._id}>
                       {String(cat.categoryName || cat.name).toUpperCase()}
                     </option>
                   ))}

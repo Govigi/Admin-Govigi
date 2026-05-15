@@ -96,6 +96,10 @@ export const VendorUrl = {
   getVendorById: backend_url + "/vendors/get", // /:id
   updateVendor: backend_url + "/vendors/update", // /:id
   deleteVendor: backend_url + "/vendors/delete", // /:id
+  getAllVendorProductRequests: backend_url + "/admin/vendor-product-requests",
+  updateVendorProductRequestStatus: (id) => `${backend_url}/admin/vendor-product-requests/${id}/status`,
+  approveVendorProductRequest: (id) => `${backend_url}/admin/vendor-product-requests/${id}/approve`,
+  rejectVendorProductRequest: (id) => `${backend_url}/admin/vendor-product-requests/${id}/reject`,
 };
 
 export const SourcingUrl = {
