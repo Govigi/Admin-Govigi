@@ -91,10 +91,15 @@ export default function ProductManagementDetails() {
     }, {});
   }, [rawCategories]);
 
-  const products = (productsData?.products || []).map((product: any) => ({
-    ...product,
-    category: categoryMap[product.category] || product.category || 'General',
-  }));
+  const products = (productsData?.products || []).map((product: any) => {
+    const categoryId = typeof product.category === 'object' ? product.category?._id : product.category;
+    const categoryName = categoryMap[categoryId] || (typeof product.category === 'object' ? product.category?.categoryName || product.category?.name : null);
+    
+    return {
+      ...product,
+      category: categoryName || product.category || 'General',
+    };
+  });
   const totalRows = productsData?.total || 0;
   const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
 

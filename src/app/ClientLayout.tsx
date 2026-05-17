@@ -12,7 +12,8 @@ import GlobalLoader from "../components/Global/GlobalLoader";
 import { LoadingProvider } from "@/src/libs/Hooks/LoadingContext";
 import { UIProvider, useUI } from "@/src/libs/Hooks/UIContext";
 import GlobalModal from "../components/Global/GlobalModal";
-import GlobalToast from "../components/Global/GlobalToast";
+import { GooeyToaster } from "goey-toast";
+import "goey-toast/styles.css";
 
 const inter = Inter({
     variable: "--font-inter",
@@ -52,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <UIProvider>
                     <GlobalLoader />
                     <GlobalModal />
-                    <GlobalToast />
+                    <GooeyToaster position="top-right" />
                     <SidePanelProvider>
                         <LayoutContent isClient={isClient} showLayout={showLayout} pathname={pathname}>
                             {children}

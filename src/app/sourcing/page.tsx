@@ -79,8 +79,8 @@ export default function SourcingPage() {
 
     const filteredOrders = orders.filter(o =>
         activeTab === 'pending'
-            ? o.sourcingStatus !== 'Assigned'
-            : o.sourcingStatus === 'Assigned'
+            ? o.sourcingStatus === 'Pending'
+            : o.sourcingStatus !== 'Pending'
     );
 
     const isLocked = (() => {

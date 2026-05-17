@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { VendorUrl } from "@/src/libs/utils/API/endpoints";
+import { VendorUrl, CategoryManagementUrl } from "@/src/libs/utils/API/endpoints";
 import { 
     MagnifyingGlassIcon, 
     FunnelIcon,
@@ -19,6 +19,7 @@ export default function AdminVendorRequests() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedRequest, setSelectedRequest] = useState<any>(null);
     const [adminNotes, setAdminNotes] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("");
 
     const { data: requests = [], isLoading } = useQuery({
         queryKey: ["vendorProductRequests"],
@@ -31,14 +32,25 @@ export default function AdminVendorRequests() {
         },
     });
 
+    const { data: categories = [] } = useQuery<any[]>({
+        queryKey: ["categories"],
+        queryFn: async () => {
+            const token = localStorage.getItem("token") || localStorage.getItem("admin_token");
+            const { data } = await axios.get(CategoryManagementUrl.getAllCategories, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return Array.isArray(data) ? data : data.categories || [];
+        }
+    });
+
     const mutation = useMutation({
-        mutationFn: async ({ id, status, notes }: { id: string, status: string, notes: string }) => {
+        mutationFn: async ({ id, status, notes, category }: { id: string, status: string, notes: string, category?: string }) => {
             const token = localStorage.getItem("token") || localStorage.getItem("admin_token");
             const endpoint = status === 'Approved'
                 ? VendorUrl.approveVendorProductRequest(id)
                 : VendorUrl.rejectVendorProductRequest(id);
 
-            await axios.patch(endpoint, { adminNotes: notes }, {
+            await axios.patch(endpoint, { adminNotes: notes, category }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         },
@@ -46,6 +58,7 @@ export default function AdminVendorRequests() {
             queryClient.invalidateQueries({ queryKey: ["vendorProductRequests"] });
             setSelectedRequest(null);
             setAdminNotes("");
+            setSelectedCategory("");
         }
     });
 
@@ -59,7 +72,16 @@ export default function AdminVendorRequests() {
 
     const handleAction = (status: string) => {
         if (!selectedRequest) return;
-        mutation.mutate({ id: selectedRequest._id, status, notes: adminNotes });
+        if (status === 'Approved' && !selectedCategory) {
+            alert("Please assign a valid product category before approving.");
+            return;
+        }
+        mutation.mutate({ 
+            id: selectedRequest._id, 
+            status, 
+            notes: adminNotes,
+            category: status === 'Approved' ? selectedCategory : undefined
+        });
     };
 
     return (
@@ -158,6 +180,12 @@ export default function AdminVendorRequests() {
                                                 onClick={() => {
                                                     setSelectedRequest(req);
                                                     setAdminNotes(req.adminNotes || "");
+                                                    // Prefill selectedCategory based on request category name match
+                                                    const matchedCat = categories.find((c: any) => 
+                                                        c._id === req.category || 
+                                                        String(c.categoryName || "").toLowerCase() === String(req.category || "").toLowerCase()
+                                                    );
+                                                    setSelectedCategory(matchedCat?._id || "");
                                                 }}
                                                 className="text-gray-400 hover:text-black transition-colors"
                                             >
@@ -211,6 +239,22 @@ export default function AdminVendorRequests() {
                                     <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Initial Stock</label>
                                     <p className="text-lg font-bold text-gray-900">{selectedRequest.stock} {selectedRequest.unit.toUpperCase()}</p>
                                 </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Assign Category <span className="text-red-500">*</span></label>
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    className="w-full border border-gray-200 p-3 text-xs font-bold uppercase tracking-wider text-gray-900 outline-none transition focus:border-black bg-gray-50/30"
+                                >
+                                    <option value="">-- SELECT PRODUCT CATEGORY --</option>
+                                    {categories.map((cat: any) => (
+                                        <option key={cat._id} value={cat._id}>
+                                            {String(cat.categoryName || "").toUpperCase()}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="space-y-4">
