@@ -1,116 +1,176 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import IndustrialKPIs from "@/src/components/Dashboard/IndustrialKPIs";
-import LiveFeed from "@/src/components/Dashboard/LiveFeed";
-import ActionRequired from "@/src/components/Dashboard/ActionRequired";
-import { OrderSummaryUrl, CustomerDashboardUrl, AdminUrl } from "@/src/libs/utils/API/endpoints";
+import React, { useState, useEffect } from "react";
+import {
+    OrderSummaryUrl,
+    CustomerDashboardUrl,
+    AdminUrl,
+    VendorUrl
+} from "../../libs/utils/API/endpoints";
+
+// Premium Components
+import IndustrialKPIs from "../../components/Dashboard/IndustrialKPIs";
+import DashboardChart from "../../components/Dashboard/DashboardChart";
+import ActionRequired from "../../components/Dashboard/ActionRequired";
+import LiveFeed from "../../components/Dashboard/LiveFeed";
+import { useUI } from "@/src/libs/Hooks/UIContext";
 
 export default function Dashboard() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [customerStats, setCustomerStats] = useState<any>({ total: 0 });
-  const [loading, setLoading] = useState(true);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+    const [customers, setCustomers] = useState<any[]>([]);
+    const [drivers, setDrivers] = useState<any[]>([]);
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { isSidebarCollapsed } = useUI();
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    useEffect(() => {
+        fetchAllData();
+    }, []);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("admin_token");
-      const headers: any = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+    const fetchAllData = async () => {
+        setLoading(true);
+        const token = localStorage.getItem("admin_token");
+        const headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
 
-      const [ordersRes, productsRes, customersRes] = await Promise.all([
-        fetch(OrderSummaryUrl.getOrderDetails || "/api/orders", { headers }),
-        fetch(OrderSummaryUrl.getAllProducts || "/api/products", { headers }),
-        fetch(CustomerDashboardUrl.getAllCustomersStats, { headers })
-      ]);
+        try {
+            const [ordersRes, productsRes, customersRes, driversRes, vendorsRes] = await Promise.all([
+                fetch(OrderSummaryUrl.getOrderDetails, { headers }),
+                fetch(OrderSummaryUrl.getAllProducts, { headers }),
+                fetch(CustomerDashboardUrl.getAllCustomers, { headers }),
+                fetch(AdminUrl.getAllDrivers, { headers }),
+                fetch(VendorUrl.getAllVendors, { headers })
+            ]);
 
-      if (ordersRes.ok) {
-        const ordersData = await ordersRes.json();
-        const rawOrders = Array.isArray(ordersData) ? ordersData : (ordersData.orders || []);
-        // Sort by newest first
-        setOrders(rawOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      }
+            if (ordersRes.ok) {
+                const data = await ordersRes.json();
+                setOrders(Array.isArray(data) ? data : []);
+            }
+            
+            if (productsRes.ok) {
+                const data = await productsRes.json();
+                setProducts(Array.isArray(data.products) ? data.products : (Array.isArray(data) ? data : []));
+            }
+            
+            if (customersRes.ok) {
+                const data = await customersRes.json();
+                setCustomers(Array.isArray(data) ? data : []);
+            }
+            
+            if (driversRes.ok) {
+                const data = await driversRes.json();
+                setDrivers(Array.isArray(data) ? data : []);
+            }
+            
+            if (vendorsRes.ok) {
+                const data = await vendorsRes.json();
+                setVendors(Array.isArray(data) ? data : []);
+            }
 
-      if (productsRes.ok) {
-        const productsData = await productsRes.json();
-        const rawProducts = Array.isArray(productsData) ? productsData : (productsData.products || []);
-        setProducts(rawProducts);
-      }
-
-      if (customersRes.ok) {
-        const cData = await customersRes.json();
-        setCustomerStats({ total: cData.totalCustomers || 0 });
-      }
-
-      // Drivers fetch (optional/mock)
-      try {
-        const driversRes = await fetch(AdminUrl.getAllDrivers, { headers });
-        if (driversRes.ok) {
-          const dData = await driversRes.json();
-          setDrivers(Array.isArray(dData) ? dData : []);
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+        } finally {
+            setLoading(false);
         }
-      } catch (e) {
-        // Ignore driver fetch error
-      }
+    };
 
-    } catch (error) {
-      console.error("Failed to fetch dashboard data", error);
-    } finally {
-      setLoading(false);
+    if (loading) {
+        return (
+            <div className="flex h-full items-center justify-center bg-white font-mono">
+                <div className="text-sm animate-pulse tracking-widest text-gray-400">LOADING DATA...</div>
+            </div>
+        );
     }
-  };
 
-  if (loading) {
+    const lowStockProducts = products.filter(p => (p.currentStock || p.stock || 0) < 10);
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-      </div>
+        <div className="min-h-screen bg-white p-4 md:p-8 font-mono text-gray-900">
+            {/* Header */}
+            <div className="mb-8 border-b border-gray-200 pb-4">
+                <h1 className="text-xl font-bold uppercase tracking-widest text-gray-950">Dashboard Overview</h1>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">
+                    Real-time Operational Metrics & Performance
+                </p>
+            </div>
+
+            {/* Top Stats - Industrial Style */}
+            <IndustrialKPIs 
+                orders={orders} 
+                customersCount={customers.length} 
+                driversCount={drivers.length} 
+            />
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Left Section - Chart & Feed */}
+                <div className="lg:col-span-8 space-y-6">
+                    <div className="border border-gray-200 rounded-lg p-4 bg-white min-h-[400px]">
+                        <div className="mb-4">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Order Trends</h3>
+                        </div>
+                        <DashboardChart orders={orders} />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="h-[400px]">
+                            <LiveFeed orders={orders} />
+                        </div>
+                        <div className="h-[400px]">
+                            <ActionRequired orders={orders} lowStockProducts={lowStockProducts} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Section - System Status */}
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600 mb-6 border-b border-gray-200 pb-2">Operational Health</h3>
+                        
+                        <div className="space-y-6">
+                            <div className="group">
+                                <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Active Vendors</div>
+                                <div className="text-3xl font-bold text-gray-950">{vendors.length}</div>
+                                <div className="text-[10px] text-emerald-600 font-bold mt-1 uppercase tracking-tighter">Verified & Active</div>
+                            </div>
+                            
+                            <div className="group">
+                                <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Registered Users</div>
+                                <div className="text-3xl font-bold text-gray-950">{customers.length}</div>
+                                <div className="text-[10px] text-gray-400 mt-1 uppercase tracking-tighter">Growth: +2.4%</div>
+                            </div>
+
+                            <div className="group">
+                                <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Fleet Status</div>
+                                <div className="text-3xl font-bold text-gray-950">{drivers.length}</div>
+                                <div className="text-[10px] text-blue-600 font-bold mt-1 uppercase tracking-tighter">Drivers On Duty</div>
+                            </div>
+                        </div>
+
+                        <div className="mt-10 pt-6 border-t border-gray-200">
+                             <button className="w-full py-3 bg-gray-950 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">
+                                View System logs
+                             </button>
+                        </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Quick Actions</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                             {["Add Product", "Add Vendor", "Reports", "Settings"].map(action => (
+                                 <button key={action} className="p-3 border border-gray-100 bg-gray-50 text-[10px] font-bold uppercase tracking-tighter text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-all">
+                                     {action}
+                                 </button>
+                             ))}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     );
-  }
-
-  const lowStockProducts = products.filter(p => (p.stock || p.quantity || 0) < 10);
-
-  return (
-    <div className="min-h-screen bg-white p-6 md:p-8 font-sans text-gray-900">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-xl font-bold uppercase tracking-widest border-l-4 border-primary pl-4">
-          Admin Overview
-        </h1>
-        <p className="text-xs text-gray-400 mt-1 pl-5 font-mono">
-          System Status: ONLINE • {new Date().toLocaleDateString()}
-        </p>
-      </div>
-
-      {/* 1. Key Performance Indicators */}
-      <IndustrialKPIs
-        orders={orders}
-        customersCount={customerStats.total}
-        driversCount={drivers.length}
-      />
-
-      {/* 2. Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)] min-h-[500px]">
-
-        {/* Left Column: Recent Activity / Feed */}
-        <div className="lg:col-span-2 h-full">
-          <LiveFeed orders={orders} />
-        </div>
-
-        {/* Right Column: Alerts & Action Items */}
-        <div className="h-full">
-          <ActionRequired
-            orders={orders}
-            lowStockProducts={lowStockProducts}
-          />
-        </div>
-      </div>
-    </div>
-  );
 }

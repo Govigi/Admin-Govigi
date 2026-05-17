@@ -12,7 +12,8 @@ import GlobalLoader from "../components/Global/GlobalLoader";
 import { LoadingProvider } from "@/src/libs/Hooks/LoadingContext";
 import { UIProvider, useUI } from "@/src/libs/Hooks/UIContext";
 import GlobalModal from "../components/Global/GlobalModal";
-import GlobalToast from "../components/Global/GlobalToast";
+import { GooeyToaster } from "goey-toast";
+import "goey-toast/styles.css";
 
 const inter = Inter({
     variable: "--font-inter",
@@ -52,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <UIProvider>
                     <GlobalLoader />
                     <GlobalModal />
-                    <GlobalToast />
+                    <GooeyToaster position="top-right" />
                     <SidePanelProvider>
                         <LayoutContent isClient={isClient} showLayout={showLayout} pathname={pathname}>
                             {children}
@@ -66,14 +67,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 function LayoutContent({ isClient, showLayout, pathname, children }: { isClient: boolean, showLayout: boolean, pathname: string, children: React.ReactNode }) {
     const { isSidebarCollapsed } = useUI();
+    const shouldShowShell = isClient && showLayout && pathname !== "/login";
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden print:h-auto print:overflow-visible">
             <div className="contents print:hidden">
-                {isClient && showLayout && pathname !== "/login" && <Sidebar />}
+                {shouldShowShell && <Sidebar />}
             </div>
 
             <div className={`flex-1 flex flex-col transition-all duration-300 ${pathname !== "/login" ? (isSidebarCollapsed ? "ml-0 md:ml-20 print:ml-0" : "ml-0 md:ml-64 print:ml-0") : ""}`}>
+                {shouldShowShell && <TopBar />}
                 <main className={`flex-1 overflow-y-auto print:overflow-visible print:h-auto ${pathname !== "/login" ? "print:mt-0" : ""}`}>{children}</main>
             </div>
             <div className="print:hidden">

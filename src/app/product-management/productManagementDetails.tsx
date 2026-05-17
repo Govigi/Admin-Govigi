@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ProductsTable from "@/src/components/product-management/ProductsTable";
-
 import {
   CategoryManagementUrl,
   OrderSummaryUrl,
   ProductManagementUrl,
 } from "@/src/libs/utils/API/endpoints";
 import {
+  ArrowPathIcon,
   ArrowUpTrayIcon,
-  PlusCircleIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  CurrencyRupeeIcon,
-  ArrowDownTrayIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,70 +19,44 @@ import axios from "axios";
 
 export default function ProductManagementDetails() {
   const router = useRouter();
-
+  const queryClient = useQueryClient();
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [vendorFilter, setVendorFilter] = useState("all");
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setCurrentPage(1);
-    }, 500);
+    }, 350);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, categoryFilter]);
-
-  const queryClient = useQueryClient();
+  }, [statusFilter, categoryFilter, vendorFilter]);
 
   useEffect(() => {
-    document.title = "Product Management - Admin | Govigi";
-    // Invalidate queries to ensure fresh data when returning from Add/Edit page
+    document.title = "Products - Admin | Govigi";
     queryClient.invalidateQueries({ queryKey: ["products"] });
     queryClient.invalidateQueries({ queryKey: ["productStats"] });
-  }, []);
+  }, [queryClient]);
 
-  // --- QUERIES ---
-
-  // 1. Fetch Products
   const { data: productsData, isLoading: isProductsLoading } = useQuery({
-    queryKey: [
-      "products",
-      currentPage,
-      perPage,
-      debouncedSearch,
-      statusFilter,
-      categoryFilter,
-    ],
+    queryKey: ["products", currentPage, perPage, debouncedSearch, statusFilter, categoryFilter, vendorFilter],
     queryFn: async () => {
       const { data } = await axios.get(OrderSummaryUrl.getAllProducts, {
-        params: {
-          page: currentPage,
-          perPage: perPage,
-          search: debouncedSearch,
-          status: statusFilter,
-          category: categoryFilter,
-        },
+        params: { page: currentPage, perPage, search: debouncedSearch, status: statusFilter, category: categoryFilter, vendor: vendorFilter },
       });
       return data;
     },
-    placeholderData: (previousData) => previousData, // Keep previous data while fetching new data
+    placeholderData: (prev) => prev,
   });
 
-  const products = productsData?.products || [];
-  const totalRows = productsData?.total || 0;
-
-  // 2. Fetch Stats
   const { data: productStats } = useQuery({
     queryKey: ["productStats"],
     queryFn: async () => {
@@ -95,139 +66,169 @@ export default function ProductManagementDetails() {
     initialData: {
       totalProducts: 0,
       activeProducts: 0,
-      inactiveProducts: 0,
+      outOfStockProducts: 0,
+      lowStockProducts: 0,
+      totalValue: 0,
     },
   });
 
-  // 3. Fetch Categories
-  const { data: categories = [] } = useQuery({
+  const { data: rawCategories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
       const { data } = await axios.get(CategoryManagementUrl.getAllCategories);
-      return data || [];
+      return Array.isArray(data) ? data : data.categories || [];
     },
   });
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  const categoryMap = useMemo(() => {
+    return rawCategories.reduce((acc: Record<string, string>, cat: any) => {
+      const name = cat.categoryName || cat.name;
+      if (name) {
+        if (cat._id) acc[cat._id] = name;
+        acc[name] = name;
+      }
+      return acc;
+    }, {});
+  }, [rawCategories]);
 
-  const handlePerRowsChange = (newPerPage: number, page: number) => {
-    setPerPage(newPerPage);
-    setCurrentPage(page);
-  };
+  const products = (productsData?.products || []).map((product: any) => {
+    const categoryId = typeof product.category === 'object' ? product.category?._id : product.category;
+    const categoryName = categoryMap[categoryId] || (typeof product.category === 'object' ? product.category?.categoryName || product.category?.name : null);
+    
+    return {
+      ...product,
+      category: categoryName || product.category || 'General',
+    };
+  });
+  const totalRows = productsData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
 
-  const stats = [
-    { label: "TOTAL PRODUCTS", value: productStats.totalProducts },
-    { label: "ACTIVE", value: productStats.activeProducts },
-    { label: "INACTIVE", value: productStats.inactiveProducts },
-  ];
+  const stats = useMemo(() => [
+    { label: "TOTAL PRODUCTS", value: productStats.totalProducts || 0 },
+    { label: "ACTIVE ITEMS", value: productStats.activeProducts || 0 },
+    { label: "OUT OF STOCK", value: productStats.outOfStockProducts ?? 0 },
+    { label: "LOW INVENTORY", value: productStats.lowStockProducts || 0 },
+    { label: "ASSET VALUE", value: `₹${Number(productStats.totalValue || 0).toLocaleString("en-IN")}` },
+  ], [productStats]);
+
+  const vendorOptions = useMemo(() => {
+    const values = products
+      .map((p: any) => p.vendor)
+      .filter((v: string | undefined) => Boolean(v));
+    return Array.from(new Set(values)) as string[];
+  }, [products]);
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setStatusFilter("all");
+    setCategoryFilter("all");
+    setVendorFilter("all");
+    setCurrentPage(1);
+  };
 
   return (
-    <div className="min-h-screen bg-white p-2 md:p-8 font-mono text-gray-900 w-full max-w-[100vw] overflow-x-hidden pb-24">
+    <div className="min-h-screen bg-white p-6 md:p-8 font-inter text-gray-900 w-full overflow-x-hidden">
+      
       {/* Stats Bar */}
       <div className="flex items-center gap-8 py-4 border-b border-gray-200 mb-8 overflow-x-auto scrollbar-hide">
         {stats.map((stat, index) => (
-          <div key={index} className="flex-shrink-0">
-            <div className="text-xs text-gray-400 tracking-widest">{stat.label}</div>
+          <div key={index} className="shrink-0">
+            <div className="text-[10px] text-gray-400 tracking-widest font-bold uppercase">{stat.label}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{stat.value}</div>
           </div>
         ))}
       </div>
 
-      {/* Toolbar */}
+      {/* Header & Actions */}
       <div className="mb-6 pb-4 border-b border-gray-200 flex flex-col gap-4">
-        <div>
-          <h1 className="text-xl font-bold uppercase tracking-widest text-[#10b981] break-words">
-            Product Management
-          </h1>
-          <p className="text-xs text-gray-400 mt-1">Manage Your Inventory</p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {/* Search & Filter Row */}
-          <div className="flex flex-col md:flex-row gap-3">
-            {/* Search Bar */}
-            <div className="relative group flex-1">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
-              <input
-                type="text"
-                placeholder="SEARCH PRODUCTS..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-200 text-xs w-full focus:outline-none focus:border-black transition-colors uppercase placeholder-gray-300"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="relative md:w-48">
-              <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="pl-9 pr-8 py-2 border border-gray-200 text-xs w-full focus:outline-none focus:border-black appearance-none bg-transparent uppercase cursor-pointer"
-              >
-                <option value="all">Status: All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-
-            {/* Category Filter */}
-            <div className="relative md:w-48">
-              <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="pl-9 pr-8 py-2 border border-gray-200 text-xs w-full focus:outline-none focus:border-black appearance-none bg-transparent uppercase cursor-pointer"
-              >
-                <option value="all">Category: All</option>
-                {categories.map((category: any) => (
-                  <option key={category._id} value={category.categoryName}>
-                    {category.categoryName}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-xl font-bold uppercase tracking-widest text-[#10b981]">
+              Inventory Control
+            </h1>
+            <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Catalogue & Stock Management</p>
           </div>
-
-
-          {/* Actions Row */}
-          <div className="grid grid-cols-2 md:flex md:justify-end gap-2 mt-2 md:mt-0">
-            <button
-              onClick={() => router.push("/product-management/bulk-pricing")}
-              className="col-span-1 md:col-auto border border-gray-200 hover:border-black text-xs px-4 py-2 uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
-            >
-              <CurrencyRupeeIcon className="w-4 h-4" />
-              Price Change
-            </button>
-
-            <button className="border border-gray-200 hover:border-black text-xs px-4 py-2 uppercase tracking-widest flex items-center justify-center gap-2 transition-colors">
-              <ArrowDownTrayIcon className="w-4 h-4" />
+          <div className="flex gap-2">
+            <button className="flex h-9 items-center gap-2 rounded-none border border-gray-200 bg-white px-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black hover:border-black transition-all">
+              <ArrowUpTrayIcon className="h-4 w-4" />
               Import
-            </button>
-            <button className="border border-gray-200 hover:border-black text-xs px-4 py-2 uppercase tracking-widest flex items-center justify-center gap-2 transition-colors">
-              <ArrowUpTrayIcon className="w-4 h-4" />
-              Export
             </button>
             <button
               onClick={() => router.push("/product-management/AddProduct")}
-              className="col-span-2 md:col-auto bg-black text-white hover:bg-[#10b981] text-xs px-4 py-2 uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
+              className="flex h-9 items-center gap-2 rounded-none bg-black px-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-xl shadow-black/5 hover:bg-emerald-600 transition-all"
             >
-              <PlusCircleIcon className="w-4 h-4" />
-              Add Product
+              <PlusIcon className="h-4 w-4" />
+              New Entry
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Filters */}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative group flex-1">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+            <input
+              type="text"
+              placeholder="SEARCH PRODUCTS, SKU, VENDORS..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 text-[10px] uppercase font-bold tracking-wider focus:outline-none focus:border-black transition-colors bg-gray-50/30"
+            />
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest bg-white focus:outline-none focus:border-black"
+            >
+              <option value="all">ALL CATEGORIES</option>
+              {rawCategories.map((cat: any) => (
+                <option key={cat._id} value={cat.categoryName || cat.name}>{String(cat.categoryName || cat.name).toUpperCase()}</option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest bg-white focus:outline-none focus:border-black"
+            >
+              <option value="all">ALL STATUS</option>
+              <option value="active">ACTIVE</option>
+              <option value="inactive">INACTIVE</option>
+            </select>
+            <select
+              value={perPage}
+              onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest bg-white focus:outline-none focus:border-black"
+            >
+              <option value={10}>10 / page</option>
+              <option value={20}>20 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
+            </select>
+            <button 
+              onClick={resetFilters}
+              className="p-2.5 border border-gray-200 text-gray-400 hover:text-black transition-colors"
+              title="Reset Filters"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="rounded-none p-0">
+      <div className="border border-gray-200 relative overflow-hidden bg-white w-full">
         <ProductsTable
           products={products}
-          paginationServer
+          isLoading={isProductsLoading}
           paginationTotalRows={totalRows}
-          onChangePage={handlePageChange}
-          onChangeRowsPerPage={handlePerRowsChange}
+          currentPage={currentPage}
+          perPage={perPage}
+          totalPages={totalPages}
+          onChangePage={setCurrentPage}
         />
       </div>
     </div>

@@ -69,13 +69,14 @@ const customStyles = {
 interface SourcingGridProps {
     orders: any[];
     loading: boolean;
-    onAssignVendor: (selectedOrders: any[]) => void;
+    onAssignVendor?: (selectedOrders: any[]) => void;
+    onRefresh: () => void;
     activeTab: 'pending' | 'assigned';
     onTabChange: (tab: 'pending' | 'assigned') => void;
     isLocked?: boolean;
 }
 
-export default function SourcingGrid({ orders, loading, onAssignVendor, activeTab, onTabChange, isLocked = false }: SourcingGridProps) {
+export default function SourcingGrid({ orders, loading, onRefresh, activeTab, onTabChange, isLocked = false }: SourcingGridProps) {
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [toggledClearRows, setToggleClearRows] = useState(false);
     const [detailOrderId, setDetailOrderId] = useState<string | null>(null); // For Side Panel
@@ -107,7 +108,7 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
         setToggleClearRows(!toggledClearRows);
         setSelectedOrderIds([]);
         setIsAssignPanelOpen(false);
-        window.location.reload();
+        onRefresh();
     };
 
     const filteredOrders = useMemo(() => {
@@ -159,7 +160,7 @@ export default function SourcingGrid({ orders, loading, onAssignVendor, activeTa
             selector: (row: any) => row.sourcingStatus,
             sortable: true,
             cell: (row: any) => (
-                row.sourcingStatus === 'Assigned' ? (
+                row.sourcingStatus !== 'Pending' ? (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-green-100 text-green-700">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Assigned
                     </span>

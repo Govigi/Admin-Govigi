@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:qa": "cross-env NEXT_PUBLIC_ENVIRONMENT=QA NEXT_PUBLIC_API_URL=https://govigi-backend-19up.onrender.com next dev",
     "build": "next build",
+    "build:qa": "cross-env NEXT_PUBLIC_ENVIRONMENT=QA NEXT_PUBLIC_API_URL=https://govigi-backend-19up.onrender.com next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -15,6 +17,7 @@
     "@tanstack/react-query": "^5.90.12",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.24",
+    "goey-toast": "^0.4.0",
     "h3-js": "^4.4.0",
     "json2csv": "^6.0.0-alpha.2",
     "next": "^16.0.8",
@@ -31,6 +34,7 @@
     "@types/node": "^24.9.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "tailwindcss": "^4.1.11"

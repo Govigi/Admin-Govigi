@@ -2,15 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import SourcingGrid from "@/src/components/Sourcing/SourcingGrid";
-import VendorAssignmentModal from "@/src/components/Sourcing/VendorAssignmentModal";
 import { OrderSummaryUrl } from "@/src/libs/utils/API/endpoints";
 import { TruckIcon } from "@heroicons/react/24/outline";
 
 export default function SourcingPage() {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
-    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
     const getTomorrowDate = () => {
         const today = new Date();
@@ -23,6 +20,8 @@ export default function SourcingPage() {
     };
 
     const [dateFilter, setDateFilter] = useState(getTomorrowDate());
+
+    const [activeTab, setActiveTab] = useState<'pending' | 'assigned'>('pending');
 
     useEffect(() => {
         fetchOrders();
@@ -78,45 +77,21 @@ export default function SourcingPage() {
         }
     };
 
-    const handleAssignSuccess = () => {
-        setSelectedOrders([]);
-        fetchOrders();
-    };
-
-    const [activeTab, setActiveTab] = useState<'pending' | 'assigned'>('pending');
-
     const filteredOrders = orders.filter(o =>
         activeTab === 'pending'
-            ? o.sourcingStatus !== 'Assigned'
-            : o.sourcingStatus === 'Assigned'
+            ? o.sourcingStatus === 'Pending'
+            : o.sourcingStatus !== 'Pending'
     );
 
-    // Locking Logic: Locked if Current Time >= Delivery Date 00:00 AM
-    // i.e., if today is Jan 15, and delivery is Jan 15, it's locked.
-    // if today is Jan 14, and delivery is Jan 15, it's open.
     const isLocked = (() => {
         const now = new Date();
-        const deliveryDate = new Date(dateFilter);
-        // Reset deliveryDate to midnight local time to match "00:00 AM" requirement
-        deliveryDate.setHours(0, 0, 0, 0);
-
-        // However, new Date("2025-01-15") is usually UTC. Let's parse safely.
         const [y, m, d] = dateFilter.split('-').map(Number);
-        const cutoff = new Date(y, m - 1, d, 0, 0, 0, 0); // Local Midnight of delivery date
-
+        const cutoff = new Date(y, m - 1, d, 0, 0, 0, 0);
         return now >= cutoff;
     })();
 
     return (
         <div className="h-[calc(100vh-64px)] bg-white font-mono text-gray-900 flex flex-col">
-            <VendorAssignmentModal
-                isOpen={isAssignModalOpen}
-                onClose={() => setIsAssignModalOpen(false)}
-                selectedOrders={selectedOrders}
-                onAssignSuccess={handleAssignSuccess}
-            />
-
-            {/* Minimal Header */}
             <div className="flex justify-between items-center px-6 py-3 border-b border-gray-100 shrink-0 bg-white z-20">
                 <div className="flex items-center gap-4">
                     <h1 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
@@ -143,15 +118,11 @@ export default function SourcingPage() {
                 </div>
             </div>
 
-            {/* Content Area - Edge to Edge */}
             <div className="flex-1 overflow-hidden bg-white">
                 <SourcingGrid
                     orders={filteredOrders}
                     loading={loading}
-                    onAssignVendor={(ordersToAssign) => {
-                        setSelectedOrders(ordersToAssign);
-                        setIsAssignModalOpen(true);
-                    }}
+                    onRefresh={fetchOrders}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
                     isLocked={isLocked}

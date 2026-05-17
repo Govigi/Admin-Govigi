@@ -1,301 +1,245 @@
 "use client";
-import DataTable from "react-data-table-component";
-import {
-    EllipsisHorizontalIcon,
-} from "@heroicons/react/24/outline";
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import { createPortal } from "react-dom";
+
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import BulkUpdateModal from "./BulkUpdateModal";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
-
-const customStyles = {
-    table: {
-        style: {
-            backgroundColor: "transparent",
-        },
-    },
-    headRow: {
-        style: {
-            backgroundColor: "#f9fafb", // gray-50
-            borderBottomWidth: "1px",
-            borderBottomColor: "#e5e7eb", // gray-200
-            minHeight: "40px",
-        },
-    },
-    headCells: {
-        style: {
-            fontFamily: "monospace",
-            fontSize: "11px",
-            fontWeight: "bold",
-            textTransform: "uppercase" as "uppercase",
-            letterSpacing: "0.05em", // tracking-widest
-            color: "#6b7280", // gray-500
-            paddingLeft: "16px",
-            paddingRight: "16px",
-        },
-    },
-    rows: {
-        style: {
-            fontSize: "12px",
-            fontFamily: "monospace",
-            minHeight: "56px",
-            borderBottomColor: "#f3f4f6", // gray-100
-            "&:hover": {
-                backgroundColor: "#f9fafb",
-            },
-            cursor: "pointer",
-        },
-    },
-    cells: {
-        style: {
-            paddingLeft: "16px",
-            paddingRight: "16px",
-            color: "#111827", // gray-900
-        },
-    },
-    pagination: {
-        style: {
-            borderTopWidth: "1px",
-            borderTopColor: "#e5e7eb",
-            fontSize: "11px",
-            fontFamily: "monospace",
-            color: "#6b7280",
-        },
-    },
-};
-
-function ActionsMenu({ row }: { row: any }) {
-    const [open, setOpen] = useState(false);
-    const [position, setPosition] = useState({ top: 0, left: 0 });
-    const iconRef = useRef<HTMLDivElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
-
-    useEffect(() => {
-        if (open && iconRef.current) {
-            const rect = iconRef.current.getBoundingClientRect();
-            setPosition({
-                top: rect.bottom + window.scrollY + 6,
-                left: rect.left + window.scrollX - 80,
-            });
-        }
-    }, [open]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: any) => {
-            if (
-                (iconRef.current && iconRef.current.contains(event.target)) ||
-                (dropdownRef.current && dropdownRef.current.contains(event.target))
-            ) {
-                return;
-            }
-            setOpen(false);
-        };
-        if (open) document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [open]);
-
-    function handleEdit() {
-        router.push(`/product-management/AddProduct?id=${row._id}`);
-        setOpen(false);
-    }
-
-    const Dropdown = (
-        <div
-            ref={dropdownRef}
-            className="fixed w-32 text-gray-700 bg-white border border-gray-200 shadow-xl z-[9999] font-mono text-xs uppercase"
-            style={{
-                top: position.top,
-                left: position.left,
-            }}
-        >
-            <button
-                className="block w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100"
-                onClick={handleEdit}
-            >
-                Edit
-            </button>
-            <button
-                className="block w-full text-left px-4 py-3 hover:bg-red-50 text-red-600"
-                onClick={() => setOpen(false)}
-            >
-                Delete
-            </button>
-        </div>
-    );
-
-    return (
-        <div className="relative inline-block" ref={iconRef}>
-            <EllipsisHorizontalIcon
-                className="h-5 w-5 text-gray-400 hover:text-black cursor-pointer"
-                onClick={() => setOpen((prev) => !prev)}
-            />
-            {open && createPortal(Dropdown, document.body)}
-        </div>
-    );
-}
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EllipsisHorizontalIcon,
+  PencilIcon,
+} from "@heroicons/react/24/outline";
 
 interface ProductsTableProps {
-    products: any[];
-    paginationServer?: boolean;
-    paginationTotalRows?: number;
-    onChangePage?: (page: number) => void;
-    onChangeRowsPerPage?: (currentRowsPerPage: number, currentPage: number) => void;
+  products: any[];
+  isLoading?: boolean;
+  paginationTotalRows?: number;
+  currentPage?: number;
+  perPage?: number;
+  totalPages?: number;
+  onChangePage?: (page: number) => void;
+}
+
+function productSku(row: any) {
+  if (row.sku) return row.sku;
+  const name = String(row.name || "PRD").replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase() || "PRD";
+  const id = String(row._id || "").slice(-3).toUpperCase() || "001";
+  return `${name}${id}`;
 }
 
 export default function ProductsTable({
-    products,
-    paginationServer = false,
-    paginationTotalRows = 0,
-    onChangePage,
-    onChangeRowsPerPage
+  products,
+  isLoading = false,
+  paginationTotalRows = 0,
+  currentPage = 1,
+  perPage = 10,
+  totalPages = 1,
+  onChangePage,
 }: ProductsTableProps) {
-    const [selectedRows, setSelectedRows] = useState<any[]>([]);
-    const [toggledClearRows, setToggleClearRows] = useState(false);
-    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const router = useRouter();
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const safeProducts = products || [];
+  const start = paginationTotalRows === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const end = Math.min(currentPage * perPage, paginationTotalRows);
 
-    const handleRowSelected = ({ selectedRows }: any) => {
-        setSelectedRows(selectedRows);
-    };
+  const toggleAll = () => {
+    if (safeProducts.every(p => selectedRows.includes(p._id))) {
+      setSelectedRows(prev => prev.filter(id => !safeProducts.some(p => p._id === id)));
+    } else {
+      setSelectedRows(prev => Array.from(new Set([...prev, ...safeProducts.map(p => p._id)])));
+    }
+  };
 
-    const handleBulkUpdateSuccess = () => {
-        setToggleClearRows(!toggledClearRows);
-        setSelectedRows([]);
-        window.location.reload();
-    };
+  const toggleRow = (id: string) => {
+    setSelectedRows(prev => prev.includes(id) ? prev.filter(rid => rid !== id) : [...prev, id]);
+  };
 
-    const columns = useMemo(() => [
-        {
-            name: "Product",
-            selector: (row: any) => row.name,
-            sortable: true,
-            cell: (row: any) => (
-                <div className="flex items-center gap-3 py-2">
-                    {row.image?.url ? (<img src={row.image.url} alt="" className="w-8 h-8 object-contain border border-gray-200" />) : (<div className="w-8 h-8 bg-gray-100 border border-gray-200"></div>)}
-                    <div className="flex flex-col">
-                        <span className="font-bold uppercase">{row.name}</span>
-                        <span className="text-[10px] text-gray-400">{row.subCategory?.name}</span>
-                    </div>
-                </div>
-            ),
-            width: "250px",
-        },
-        {
-            name: "Category",
-            selector: (row: any) => row.category || "N/A",
-            sortable: true,
-            cell: (row: any) => (
-                <span className="font-mono text-[10px] uppercase tracking-wide">
-                    {row.category || "N/A"}
-                </span>
-            ),
-        },
-        {
-            name: "Price",
-            selector: (row: any) => row.pricePerKg,
-            sortable: true,
-            cell: (row: any) => (
-                <span className="font-mono font-bold">
-                    ₹{row.pricePerKg} <span className="text-gray-400 font-normal">/ {row.unit}</span>
-                </span>
-            ),
-        },
-        {
-            name: "Stock",
-            selector: (row: any) => row.stock,
-            sortable: true,
-            cell: (row: any) => (
-                <div className="flex flex-col">
-                    <span className={`font-mono font-bold ${row.stock < 10 ? "text-red-500" : "text-black"}`}>{row.stock} {row.unit}</span>
-                    {row.stock < 10 && <span className="text-[10px] text-red-500 uppercase">Low Stock</span>}
-                </div>
-            ),
-        },
-        {
-            name: "Status",
-            selector: (row: any) => row.status,
-            sortable: true,
-            cell: (row: any) => (
-                <span
-                    className={`border py-0.5 px-2 text-[10px] uppercase font-mono tracking-wide ${row.status === "active"
-                        ? "border-green-200 text-green-700 bg-green-50"
-                        : "border-gray-200 text-gray-500 bg-gray-50"
-                        }`}
-                >
-                    {row.status === "active" ? "Active" : "Inactive"}
-                </span>
-            ),
-        },
-        {
-            name: "Last Updated",
-            selector: (row: any) => row.updatedAt,
-            sortable: true,
-            cell: (row: any) => new Date(row.updatedAt).toLocaleDateString("en-IN"),
-        },
-        {
-            name: "Actions",
-            cell: (row: any) => <ActionsMenu row={row} />,
-            ignoreRowClick: true,
-            width: "80px",
-        },
-    ], []);
+  const paginationItems = useMemo(() => {
+    const total = totalPages;
+    if (total <= 7) return Array.from({ length: total }, (_, idx) => idx + 1);
 
-    return (
-        <div className="border border-gray-200 relative rounded-lg overflow-hidden bg-white w-full max-w-full">
-            <BulkUpdateModal
-                isOpen={isBulkModalOpen}
-                onClose={() => setIsBulkModalOpen(false)}
-                selectedCount={selectedRows.length}
-                selectedIds={selectedRows.map(r => r._id)}
-                onSuccess={handleBulkUpdateSuccess}
-            />
+    const pages: Array<number | string> = [1];
+    const left = Math.max(2, currentPage - 1);
+    const right = Math.min(total - 1, currentPage + 1);
 
-            {/* Custom Bulk Action Bar */}
-            {selectedRows.length > 0 && (
-                <div className="absolute top-0 left-0 right-0 z-10 bg-[#10b981] text-white h-[40px] flex items-center justify-between px-4 animate-in fade-in slide-in-from-top-2">
-                    <input
-                        type="checkbox"
-                        className="h-3 w-3 rounded border-white/20 bg-white/20 text-white focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                        checked={selectedRows.length > 0}
-                        onChange={() => {
-                            setToggleClearRows(!toggledClearRows);
-                            setSelectedRows([]);
-                        }}
-                    />
-                    <div className="font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                        <span>{selectedRows.length} Selected</span>
-                    </div>
-                    <button
-                        onClick={() => setIsBulkModalOpen(true)}
-                        className="bg-white text-black hover:bg-gray-100 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 flex items-center gap-2 transition-colors"
-                    >
-                        <ArrowPathIcon className="h-3 w-3" />
-                        Update Batch
-                    </button>
-                </div>
-            )}
+    if (left > 2) pages.push("left-ellipsis");
+    for (let page = left; page <= right; page += 1) {
+      pages.push(page);
+    }
+    if (right < total - 1) pages.push("right-ellipsis");
+    pages.push(total);
 
-            <div className="accent-[#10b981] overflow-x-auto w-full">
-                <DataTable
-                    columns={columns}
-                    data={products}
-                    pagination
-                    paginationServer={paginationServer}
-                    paginationTotalRows={paginationTotalRows}
-                    onChangePage={onChangePage}
-                    onChangeRowsPerPage={onChangeRowsPerPage}
-                    highlightOnHover
-                    pointerOnHover
-                    responsive
-                    paginationPerPage={10}
-                    customStyles={customStyles}
-                    selectableRows
-                    onSelectedRowsChange={handleRowSelected}
-                    clearSelectedRows={toggledClearRows}
-                    keyField="_id"
+    return pages;
+  }, [currentPage, totalPages]);
+
+  return (
+    <div className="w-full bg-white">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[1000px]">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-4 w-12">
+                <input 
+                  type="checkbox" 
+                  className="rounded border-gray-300 text-black focus:ring-black"
+                  checked={safeProducts.length > 0 && safeProducts.every(p => selectedRows.includes(p._id))}
+                  onChange={toggleAll}
                 />
+              </th>
+              <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Information</th>
+              <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</th>
+              <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Price Point</th>
+              <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+              <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {isLoading ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fetching Catalogue...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : safeProducts.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+                  No products found
+                </td>
+              </tr>
+            ) : (
+              safeProducts.map((row) => (
+                <tr key={row._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer group" onClick={() => router.push(`/product-management/AddProduct?id=${row._id}`)}>
+                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300 text-black focus:ring-black"
+                      checked={selectedRows.includes(row._id)}
+                      onChange={() => toggleRow(row._id)}
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-50 border border-gray-100 flex-shrink-0 relative overflow-hidden rounded-sm">
+                        {row.image?.url ? (
+                          <img src={row.image.url} alt={row.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold text-xs uppercase">
+                            {String(row.name || "P").slice(0, 1)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase text-gray-800 tracking-tight">{row.name || "Untitled"}</p>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase mt-0.5 tracking-tighter">SKU: {productSku(row)}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-0.5 bg-gray-50 text-[9px] font-bold border border-gray-100 rounded uppercase tracking-wider text-gray-500">
+                      {typeof row.category === "object"
+                        ? row.category.categoryName || row.category.name || row.category._id || "General"
+                        : row.category || "General"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs font-black text-gray-900">₹{row.pricePerKg || row.price || 0}</span>
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">per {row.unit || "kg"}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-0.5 text-[9px] font-bold border uppercase tracking-widest ${
+                      row.status === "inactive" 
+                      ? "border-amber-200 text-amber-700 bg-amber-50" 
+                      : "border-green-200 text-green-700 bg-green-50"
+                    }`}>
+                      {row.status || "Active"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => router.push(`/product-management/AddProduct?id=${row._id}`)}
+                        className="p-2 border border-gray-100 text-gray-400 hover:text-black hover:border-black transition-all"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                      </button>
+                      <button className="p-2 border border-gray-100 text-gray-400 hover:text-black hover:border-black transition-all">
+                        <EllipsisHorizontalIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="px-6 py-4 border-t border-gray-100 bg-white">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Showing {start} - {end} of {paginationTotalRows} items
+          </p>
+          <div className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-500">
+              <span>Page</span>
+              <span className="font-black text-gray-900">{currentPage}</span>
+              <span>of</span>
+              <span className="font-black text-gray-900">{totalPages}</span>
             </div>
+            <div className="flex items-center gap-1 overflow-x-auto">
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => onChangePage?.(1)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                First
+              </button>
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => onChangePage?.(currentPage - 1)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+              {paginationItems.map((item) => (
+                typeof item === "string" ? (
+                  <span key={item} className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => onChangePage?.(item)}
+                    className={`px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest transition-all ${item === currentPage ? "bg-black text-white" : "text-gray-500 hover:border-black hover:text-black"}`}
+                    disabled={item === currentPage}
+                  >
+                    {item}
+                  </button>
+                )
+              ))}
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => onChangePage?.(currentPage + 1)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => onChangePage?.(totalPages)}
+                className="px-3 py-2 border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:border-black hover:text-black transition-all"
+              >
+                Last
+              </button>
+            </div>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
