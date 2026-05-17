@@ -131,7 +131,7 @@ export default function OrderDistributionPage() {
                 const moreCount = categoryNames.length > 2 ? categoryNames.length - 2 : 0;
 
                 // Determine assignment status from real data
-                const isAssigned = order.sourcingStatus === "Assigned" || !!order.vendorId;
+                const isAssigned = (order.sourcingStatus && order.sourcingStatus !== "Pending") || !!order.vendorId;
                 const assignedVendor = order.vendorId
                     ? vendorsData.find(v => v._id === order.vendorId)
                     : null;

@@ -138,6 +138,26 @@ export default function AddProduct() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (categories.length > 0 && formData.category) {
+      const isIdValid = categories.some(c => c._id === formData.category);
+      if (!isIdValid) {
+        const matchedCat = categories.find(c => {
+          const catName = String(c.categoryName || c.name || "").toUpperCase();
+          const formCat = String(formData.category || "").toUpperCase();
+          // If formCat looks like a MongoDB ID, don't use it for name-based lookup
+          const isHexId = /^[0-9a-fA-F]{24}$/.test(formCat);
+          if (isHexId) return false;
+          return catName === formCat && formCat !== "";
+        });
+        
+        if (matchedCat) {
+          setFormData(prev => ({ ...prev, category: matchedCat._id }));
+        }
+      }
+    }
+  }, [categories, formData.category]);
+
   const updateForm = (field: keyof FormState, value: FormState[keyof FormState]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -147,7 +167,8 @@ export default function AddProduct() {
       const res = await fetch(CategoryManagementUrl.getAllCategories);
       if (res.ok) {
         const data = await res.json();
-        setCategories(Array.isArray(data) ? data : data.categories || []);
+        const list = Array.isArray(data) ? data : data.categories || [];
+        setCategories(list);
       }
     } catch (error) {
       showToast(`Error fetching categories: ${error}`, "error");
@@ -166,7 +187,7 @@ export default function AddProduct() {
           ...prev,
           name: product.name || "",
           sku: product.sku || "PRD0001",
-          category: product.category?._id || product.category?.categoryName || product.category || "",
+          category: product.category?.categoryName || product.category?.name || product.category?._id || product.category || "",
           subCategory: product.subCategory || "",
           description: product.description || "",
           pricePerKg: product.pricePerKg || "",
@@ -334,14 +355,14 @@ export default function AddProduct() {
 
               <Field label="CATEGORY" required>
                 <select 
-                  value={formData.category} 
+                  value={categories.find(c => c._id === formData.category || String(c.categoryName || c.name).toUpperCase() === String(formData.category).toUpperCase())?._id || formData.category} 
                   onChange={(e) => updateForm("category", e.target.value)} 
                   disabled={isViewMode} 
                   className={selectClass}
                 >
                   <option value="">SELECT CATEGORY</option>
                   {categories.map((cat: any) => (
-                    <option key={cat._id} value={cat.categoryName || cat.name || cat._id}>
+                    <option key={cat._id} value={cat._id}>
                       {String(cat.categoryName || cat.name).toUpperCase()}
                     </option>
                   ))}

@@ -160,7 +160,7 @@ export default function SourcingGrid({ orders, loading, onRefresh, activeTab, on
             selector: (row: any) => row.sourcingStatus,
             sortable: true,
             cell: (row: any) => (
-                row.sourcingStatus === 'Assigned' ? (
+                row.sourcingStatus !== 'Pending' ? (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-green-100 text-green-700">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Assigned
                     </span>

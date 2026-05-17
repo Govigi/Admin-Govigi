@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { gooeyToast } from "goey-toast";
 
 type ModalType = "info" | "confirm" | "delete";
 type ToastType = "success" | "error" | "info" | "warning";
@@ -110,6 +111,16 @@ export function UIProvider({ children }: { children: ReactNode }) {
         setTimeout(() => {
             setToast((prev) => ({ ...prev, isVisible: false }));
         }, duration);
+
+        if (type === "success") {
+            gooeyToast.success(message, { duration });
+        } else if (type === "error") {
+            gooeyToast.error(message, { duration });
+        } else if (type === "warning") {
+            gooeyToast.warning(message, { duration });
+        } else {
+            gooeyToast.info(message, { duration });
+        }
     };
 
     const hideToast = () => {

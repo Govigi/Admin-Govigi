@@ -44,6 +44,7 @@ export default function OrderAssignmentPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [vendorOptions, setVendorOptions] = useState<Record<string, Vendor[]>>({});
   const [categoryImages, setCategoryImages] = useState<Record<string, string>>({});
+  const [categoryNamesMap, setCategoryNamesMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,11 +67,18 @@ export default function OrderAssignmentPage() {
   const fetchCategories = async () => {
     try {
       const res = await axios.get(CategoryManagementUrl.getAllCategories);
-      const map: Record<string, string> = {};
+      const imgMap: Record<string, string> = {};
+      const namesMap: Record<string, string> = {};
       res.data.forEach((cat: any) => {
-        map[cat.categoryName.toLowerCase()] = cat.categoryImage?.url;
+        const name = cat.categoryName || "General";
+        imgMap[name.toLowerCase()] = cat.categoryImage?.url;
+        if (cat._id) {
+          namesMap[cat._id.toLowerCase()] = name;
+        }
+        namesMap[name.toLowerCase()] = name;
       });
-      setCategoryImages(map);
+      setCategoryImages(imgMap);
+      setCategoryNamesMap(namesMap);
     } catch (err) {
       console.error("Failed to fetch categories", err);
     }
@@ -124,6 +132,7 @@ export default function OrderAssignmentPage() {
   const fetchVendorsByCategory = async (category: string, location?: { lat: number; lng: number }) => {
     try {
       const token = localStorage.getItem("admin_token");
+      const resolvedCategory = categoryNamesMap[category.toLowerCase()] || category;
 
       const hasValidLocation =
         location &&
@@ -135,7 +144,7 @@ export default function OrderAssignmentPage() {
       let vendors: Vendor[] = [];
 
       try {
-        let url = `${SourcingUrl.getNearbyVendors}?categories=${encodeURIComponent(category)}`;
+        let url = `${SourcingUrl.getNearbyVendors}?categories=${encodeURIComponent(resolvedCategory)}`;
         if (hasValidLocation) url += `&lat=${location!.lat}&lng=${location!.lng}`;
         const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
         vendors = (res.data || []).map((v: any) => ({
@@ -152,7 +161,7 @@ export default function OrderAssignmentPage() {
         vendors = (res.data || [])
           .filter((v: any) =>
             (v.supportedCategories || []).some(
-              (sc: string) => sc.toLowerCase() === category.toLowerCase()
+              (sc: string) => sc.toLowerCase() === resolvedCategory.toLowerCase()
             )
           )
           .slice(0, 2)
@@ -391,7 +400,8 @@ export default function OrderAssignmentPage() {
                   {selectedOrder.categories.map((cat) => {
                     const isAssigned = !!cat.vendorId;
                     const assignedVendor = vendorOptions[cat.key]?.find((v) => v.id === cat.vendorId);
-                    const imgUrl = categoryImages[cat.key];
+                    const resolvedName = categoryNamesMap[cat.key.toLowerCase()] || cat.key;
+                    const imgUrl = categoryImages[resolvedName.toLowerCase()];
 
                     return (
                       <div
@@ -403,13 +413,13 @@ export default function OrderAssignmentPage() {
                         <div className="flex items-center gap-3 p-4 border-b border-gray-100">
                           <div className="w-10 h-10 bg-gray-100 flex-shrink-0 relative overflow-hidden">
                             {imgUrl ? (
-                              <Image src={imgUrl} alt={cat.key} fill className="object-cover" />
+                              <Image src={imgUrl} alt={resolvedName} fill className="object-cover" />
                             ) : (
                               <Squares2X2Icon className="w-5 h-5 m-auto mt-2.5 text-gray-300" />
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold uppercase truncate">{cat.key}</p>
+                            <p className="text-xs font-bold uppercase truncate">{resolvedName}</p>
                             <p className="text-[9px] text-gray-400">{cat.qty} units</p>
                           </div>
                           {isAssigned && (
