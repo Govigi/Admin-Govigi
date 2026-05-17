@@ -40,11 +40,11 @@ export default function OrderDetailsPanel({ order, onClose, onAssign, isLocked =
                         <div>
                             <div className="flex items-center gap-3">
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Order #{order.orderId}</h2>
-                                <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${order.sourcingStatus === 'Assigned'
+                                <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${order.sourcingStatus !== 'Pending'
                                     ? "bg-green-50 text-green-700 border-green-100"
                                     : "bg-amber-50 text-amber-700 border-amber-100"
                                     }`}>
-                                    {order.sourcingStatus === 'Assigned' ? 'Assigned' : 'Pending'}
+                                    {order.sourcingStatus !== 'Pending' ? 'Assigned' : 'Pending'}
                                 </div>
                             </div>
                             <p className="text-xs text-gray-500 font-medium mt-1 flex items-center gap-2">
@@ -115,7 +115,7 @@ export default function OrderDetailsPanel({ order, onClose, onAssign, isLocked =
                                                     </div>
                                                     {/* Price or Status */}
                                                     <div className="text-right">
-                                                        {item.sourcingStatus === 'Assigned' && (
+                                                        {item.sourcingStatus !== 'Pending' && (
                                                             <CheckCircleIcon className="w-4 h-4 text-green-500 ml-auto mb-1" />
                                                         )}
                                                         <span className="text-xs font-bold text-gray-900">
@@ -139,7 +139,7 @@ export default function OrderDetailsPanel({ order, onClose, onAssign, isLocked =
                                 ₹{order.products?.reduce((acc: number, item: any) => acc + (item.price || 0) * (item.quantity || 1), 0).toFixed(2) || "0.00"}
                             </span>
                         </div>
-                        {order.sourcingStatus !== 'Assigned' ? (
+                        {order.sourcingStatus === 'Pending' ? (
                             isLocked ? (
                                 <div className="w-full py-4 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-widest rounded-xl flex justify-center items-center gap-2 cursor-not-allowed">
                                     <LockClosedIcon className="w-4 h-4" />
