@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import ProductsTable from "@/src/components/product-management/ProductsTable";
+import BulkUpdateModal from "@/src/components/product-management/BulkUpdateModal";
 import {
   CategoryManagementUrl,
   OrderSummaryUrl,
@@ -10,6 +11,7 @@ import {
 import {
   ArrowPathIcon,
   ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
   MagnifyingGlassIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
@@ -27,6 +29,109 @@ export default function ProductManagementDetails() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [vendorFilter, setVendorFilter] = useState("all");
+
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const escapeCSV = (val: any) => {
+    if (val === undefined || val === null) return "";
+    let str = String(val);
+    str = str.replace(/"/g, '""');
+    if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+      return `"${str}"`;
+    }
+    return str;
+  };
+
+  const handleExportToCSV = async () => {
+    try {
+      setIsExporting(true);
+      const { data } = await axios.get(OrderSummaryUrl.getAllProducts, {
+        params: {
+          page: 1,
+          perPage: 100000,
+          search: debouncedSearch,
+          status: statusFilter,
+          category: categoryFilter,
+          vendor: vendorFilter
+        },
+      });
+
+      const exportList = data?.products || [];
+      if (exportList.length === 0) {
+        alert("No products found to export.");
+        setIsExporting(false);
+        return;
+      }
+
+      const headers = [
+        "Name",
+        "SKU",
+        "Category",
+        "Sub Category",
+        "Description",
+        "Unit",
+        "Price Per Kg",
+        "MRP",
+        "Cost Price",
+        "Current Stock",
+        "Stock Status",
+        "Lifecycle Status",
+        "Max Order Quantity",
+        "Minimum Threshold",
+        "Shelf Life (Days)",
+        "Storage Instructions",
+        "Tags",
+        "Image URL"
+      ];
+
+      const rows = exportList.map((prod: any) => {
+        const categoryId = typeof prod.category === 'object' ? prod.category?._id : prod.category;
+        const categoryName = categoryMap[categoryId] || (typeof prod.category === 'object' ? prod.category?.categoryName || prod.category?.name : null) || prod.category || "General";
+        
+        return [
+          prod.name || "",
+          prod.sku || "",
+          categoryName,
+          prod.subCategory || "",
+          prod.description || "",
+          prod.unit || "",
+          prod.pricePerKg !== undefined ? String(prod.pricePerKg) : "",
+          prod.mrp !== undefined ? String(prod.mrp) : "",
+          prod.costPrice !== undefined ? String(prod.costPrice) : "",
+          prod.currentStock !== undefined ? String(prod.currentStock) : "",
+          prod.stock || "Available",
+          prod.status || "active",
+          prod.maxOrderQuantity !== undefined ? String(prod.maxOrderQuantity) : "",
+          prod.minimumThreshold !== undefined ? String(prod.minimumThreshold) : "",
+          prod.shelfLife !== undefined ? String(prod.shelfLife) : "",
+          prod.storageInstructions || "",
+          Array.isArray(prod.tags) ? prod.tags.join(", ") : "",
+          prod.image?.url || ""
+        ];
+      });
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row: string[]) => row.map(escapeCSV).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `govigi_products_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export Error:", error);
+      alert("Failed to export products.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -111,13 +216,6 @@ export default function ProductManagementDetails() {
     { label: "ASSET VALUE", value: `₹${Number(productStats.totalValue || 0).toLocaleString("en-IN")}` },
   ], [productStats]);
 
-  const vendorOptions = useMemo(() => {
-    const values = products
-      .map((p: any) => p.vendor)
-      .filter((v: string | undefined) => Boolean(v));
-    return Array.from(new Set(values)) as string[];
-  }, [products]);
-
   const resetFilters = () => {
     setSearchQuery("");
     setDebouncedSearch("");
@@ -150,9 +248,25 @@ export default function ProductManagementDetails() {
             <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Catalogue & Stock Management</p>
           </div>
           <div className="flex gap-2">
+            {selectedRows.length > 0 && (
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className="flex h-9 items-center gap-2 rounded-none bg-[#10b981] px-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-xl shadow-[#10b981]/5 hover:bg-emerald-600 transition-all"
+              >
+                Bulk Update ({selectedRows.length})
+              </button>
+            )}
             <button className="flex h-9 items-center gap-2 rounded-none border border-gray-200 bg-white px-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black hover:border-black transition-all">
               <ArrowUpTrayIcon className="h-4 w-4" />
               Import
+            </button>
+            <button
+              onClick={handleExportToCSV}
+              disabled={isExporting}
+              className="flex h-9 items-center gap-2 rounded-none border border-gray-200 bg-white px-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black hover:border-black transition-all disabled:opacity-50"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              {isExporting ? "Exporting..." : "Export"}
             </button>
             <button
               onClick={() => router.push("/product-management/AddProduct")}
@@ -184,7 +298,7 @@ export default function ProductManagementDetails() {
             >
               <option value="all">ALL CATEGORIES</option>
               {rawCategories.map((cat: any) => (
-                <option key={cat._id} value={cat.categoryName || cat.name}>{String(cat.categoryName || cat.name).toUpperCase()}</option>
+                <option key={cat._id} value={cat._id}>{String(cat.categoryName || cat.name).toUpperCase()}</option>
               ))}
             </select>
             <select
@@ -220,7 +334,7 @@ export default function ProductManagementDetails() {
         </div>
       </div>
 
-      <div className="border border-gray-200 relative overflow-hidden bg-white w-full">
+      <div className="border border-gray-200 rounded-none p-0">
         <ProductsTable
           products={products}
           isLoading={isProductsLoading}
@@ -229,8 +343,24 @@ export default function ProductManagementDetails() {
           perPage={perPage}
           totalPages={totalPages}
           onChangePage={setCurrentPage}
+          onSelectedRowsChange={(selected) => setSelectedRows(selected.selectedRows)}
         />
       </div>
+
+      <BulkUpdateModal
+        isOpen={isBulkModalOpen}
+        onClose={() => {
+          setIsBulkModalOpen(false);
+          setSelectedRows([]);
+        }}
+        selectedCount={selectedRows.length}
+        selectedIds={selectedRows.map((r) => r._id)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+          queryClient.invalidateQueries({ queryKey: ["productStats"] });
+        }}
+      />
+
     </div>
   );
 }
