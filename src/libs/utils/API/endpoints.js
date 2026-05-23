@@ -100,6 +100,10 @@ export const VendorUrl = {
   updateVendorProductRequestStatus: (id) => `${backend_url}/admin/vendor-product-requests/${id}/status`,
   approveVendorProductRequest: (id) => `${backend_url}/admin/vendor-product-requests/${id}/approve`,
   rejectVendorProductRequest: (id) => `${backend_url}/admin/vendor-product-requests/${id}/reject`,
+  getPerformance: backend_url + "/vendors/performance",
+  recordPayout: backend_url + "/vendors/payout",
+  processPayout: (id) => `${backend_url}/vendors/payouts/${id}/process`,
+  updatePayoutSettings: backend_url + "/vendors/payout-settings",
 };
 
 export const SourcingUrl = {

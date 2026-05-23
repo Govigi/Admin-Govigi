@@ -137,7 +137,7 @@ export default function BulkUpdateModal({ isOpen, onClose, selectedCount, select
                             >
                                 <option value="">-- Select Category --</option>
                                 {categories.map((cat) => (
-                                    <option key={cat._id} value={cat.categoryName}>
+                                    <option key={cat._id} value={cat._id}>
                                         {cat.categoryName.toUpperCase()}
                                     </option>
                                 ))}
