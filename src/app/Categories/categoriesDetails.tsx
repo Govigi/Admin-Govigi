@@ -110,7 +110,7 @@ export default function CategoriesDetails() {
   ];
 
   return (
-    <div className="min-h-screen bg-white p-6 md:p-8 font-mono text-gray-900">
+    <div className="min-h-screen bg-white p-6 md:p-8 font-mono text-gray-900 w-full overflow-x-hidden">
       {/* Stats Bar */}
       <div className="flex items-center gap-8 py-4 border-b border-gray-200 mb-8 overflow-x-auto">
         {stats.map((stat, index) => (

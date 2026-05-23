@@ -35,3 +35,49 @@ export const getCategories = async () => {
     const response = await axios.get(CategoryManagementUrl.getAllCategories, getAuthHeader());
     return response.data;
 };
+
+export const getVendorsPerformance = async () => {
+    const response = await axios.get(VendorUrl.getPerformance, getAuthHeader());
+    return response.data;
+};
+
+export const recordVendorPayout = async (data: {
+    vendorId: string;
+    amount: number;
+    paymentMethod: string;
+    referenceId: string;
+    remarks?: string;
+    payoutType?: string;
+}) => {
+    const response = await axios.post(VendorUrl.recordPayout, data, getAuthHeader());
+    return response.data;
+};
+
+export const processEmergencyPayout = async (id: string, data: {
+    status: "Paid" | "Rejected";
+    paymentMethod?: string;
+    referenceId?: string;
+    remarks?: string;
+}) => {
+    const response = await axios.patch(VendorUrl.processPayout(id), data, getAuthHeader());
+    return response.data;
+};
+
+export const updateVendorPayoutSettings = async (data: {
+    vendorId: string;
+    payoutSchedule?: string;
+    emergencyPayoutEnabled?: boolean;
+}) => {
+    const response = await axios.patch(VendorUrl.updatePayoutSettings, data, getAuthHeader());
+    return response.data;
+};
+
+export const createCategory = async (data: FormData) => {
+    const response = await axios.post(CategoryManagementUrl.createCategory, data, {
+        headers: {
+            ...getAuthHeader().headers,
+            "Content-Type": "multipart/form-data",
+        }
+    });
+    return response.data;
+};

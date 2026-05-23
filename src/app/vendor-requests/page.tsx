@@ -184,18 +184,18 @@ export default function AdminVendorRequests() {
                                                     const matchedCat = categories.find((c: any) => 
                                                         c._id === req.category || 
                                                         String(c.categoryName || "").toLowerCase() === String(req.category || "").toLowerCase()
-                                                    );
-                                                    setSelectedCategory(matchedCat?._id || "");
-                                                }}
-                                                className="text-gray-400 hover:text-black transition-colors"
-                                            >
-                                                <EyeIcon className="w-5 h-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
+                                                     );
+                                                     setSelectedCategory(matchedCat?._id || "");
+                                                 }}
+                                                 className="text-gray-400 hover:text-black transition-colors"
+                                             >
+                                                 <EyeIcon className="w-5 h-5" />
+                                             </button>
+                                         </td>
+                                     </tr>
+                                 ))
+                             )}
+                         </tbody>
                     </table>
                 </div>
             </div>

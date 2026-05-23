@@ -84,19 +84,7 @@ export default function CustomerSegments() {
         }
     };
 
-    // ... existing code ...
 
-    <div>
-        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Discount (%)</label>
-        <input
-            type="number"
-            min="0"
-            max="100"
-            value={formData.discountPercentage}
-            onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value === "" ? "" : Number(e.target.value) })}
-            className="block w-full border border-gray-200 px-3 py-2 text-sm focus:border-black focus:outline-none transition-colors"
-        />
-    </div>
 
     const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this segment?")) {

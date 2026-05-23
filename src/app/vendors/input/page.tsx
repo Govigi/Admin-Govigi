@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createVendor, getVendorById, updateVendor, getCategories } from "../../../libs/vendorService";
+import { createVendor, getVendorById, updateVendor, getCategories, createCategory } from "../../../libs/vendorService";
+import { ExclamationTriangleIcon, SparklesIcon, FolderPlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { ArrowLeftIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import ServiceRangeSelector from "@/src/components/ServiceRangeSelector";
 import MapPickerModal from "@/src/components/MapPickerModal";
@@ -51,6 +52,12 @@ function VendorForm() {
     const isViewMode = mode === "view";
 
     const [categories, setCategories] = useState([]);
+    const [showQuickCreateModal, setShowQuickCreateModal] = useState(false);
+    const [quickCategoryName, setQuickCategoryName] = useState("");
+    const [quickCategoryDesc, setQuickCategoryDesc] = useState("");
+    const [quickCategoryImage, setQuickCategoryImage] = useState<File | null>(null);
+    const [quickCategoryImagePreview, setQuickCategoryImagePreview] = useState<string | null>(null);
+    const [quickCategoryLoading, setQuickCategoryLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showMap, setShowMap] = useState(false);
     const [formData, setFormData] = useState({
@@ -167,6 +174,43 @@ function VendorForm() {
         }));
     };
 
+    const handleQuickCreateCategory = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!quickCategoryName.trim()) {
+            alert("Category Name is required.");
+            return;
+        }
+        setQuickCategoryLoading(true);
+        try {
+            const formDataPayload = new FormData();
+            formDataPayload.append("categoryName", quickCategoryName.trim());
+            formDataPayload.append("categoryDescription", quickCategoryDesc.trim());
+            formDataPayload.append("categoryStatus", "active");
+            if (quickCategoryImage) {
+                formDataPayload.append("image", quickCategoryImage);
+            }
+            await createCategory(formDataPayload);
+            alert("Category created successfully!");
+            
+            const newCatName = quickCategoryName.trim();
+            setCategories(prev => {
+                if (prev.includes(newCatName as never)) return prev;
+                return [...prev, newCatName] as any;
+            });
+            
+            setShowQuickCreateModal(false);
+            setQuickCategoryName("");
+            setQuickCategoryDesc("");
+            setQuickCategoryImage(null);
+            setQuickCategoryImagePreview(null);
+        } catch (err) {
+            console.error("Failed to create category", err);
+            alert("Failed to create category.");
+        } finally {
+            setQuickCategoryLoading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -198,6 +242,10 @@ function VendorForm() {
     };
 
 
+
+    const newCategories = formData.supportedCategories?.filter(
+        (sc: string) => !categories.some((c: any) => String(c).toLowerCase() === String(sc).toLowerCase())
+    ) || [];
 
     return (
         <div className="min-h-screen bg-white p-4 md:p-8 font-mono text-gray-900 w-full">
