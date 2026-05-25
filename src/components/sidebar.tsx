@@ -18,6 +18,8 @@ import {
   UserGroupIcon,
   UsersIcon,
   MapIcon,
+  MegaphoneIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 import Logo from "../../public/GoVigiLogo.png";
 import { useUI } from "../libs/Hooks/UIContext";
@@ -44,6 +46,9 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Order Summary", path: "/Ordersummary" },
       { name: "Order Assignment", path: "/order-assignment" },
+      { name: "Pending Orders", path: "/orders/pending" },
+      { name: "Delivered Orders", path: "/orders/delivered" },
+      { name: "Order Distribution", path: "/order-distribution" },
     ],
   },
   {
@@ -66,8 +71,26 @@ const navItems: NavItem[] = [
       { name: "Vendor Performance", path: "/vendors/performance" },
     ],
   },
-  { name: "Users", path: "/customers-dashboard", icon: UsersIcon },
+  {
+    name: "Users",
+    path: "/customers-dashboard",
+    icon: UsersIcon,
+    subItems: [
+      { name: "Manage Users", path: "/customers-dashboard" },
+      { name: "Customer Segments", path: "/customers-dashboard/segments" },
+    ],
+  },
   { name: "Delivery Partners", path: "/drivers", icon: TruckIcon },
+  {
+    name: "Operations",
+    path: "/sourcing",
+    icon: ArrowsRightLeftIcon,
+    subItems: [
+      { name: "Order Sourcing", path: "/sourcing" },
+      { name: "Delivery Slots", path: "/scheduling" },
+      { name: "Geofencing", path: "/geofencing" },
+    ],
+  },
   {
     name: "Payments",
     path: "/finance/payments",
@@ -77,9 +100,17 @@ const navItems: NavItem[] = [
       { name: "Vendor Settlements", path: "/finance/settlements" },
     ],
   },
+  {
+    name: "Marketing",
+    path: "/marketing/banners",
+    icon: MegaphoneIcon,
+    subItems: [
+      { name: "App Banners", path: "/marketing/banners" },
+      { name: "Push Broadcasts", path: "/marketing/notifications" },
+    ],
+  },
+  { name: "Media Gallery", path: "/media/gallery", icon: PhotoIcon },
   { name: "Reports", path: "/Ordersummary/stockReport", icon: DocumentTextIcon },
-  { name: "Notifications", path: "/inventory-alerts", icon: BellIcon },
-  { name: "Geofencing", path: "/geofencing", icon: MapIcon },
   { name: "Settings", path: "/settings", icon: Cog6ToothIcon },
 ];
 
