@@ -27,25 +27,81 @@ const geistMono = Geist_Mono({
 
 import Providers from "../components/Providers";
 
+import axios from "axios";
+
+// Helper to validate JWT token expiration client-side
+const isTokenValid = (token: string | null): boolean => {
+    if (!token) return false;
+    try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return false;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(window.atob(base64));
+        const now = Math.floor(Date.now() / 1000);
+        return !!(decoded.exp && decoded.exp > now);
+    } catch (e) {
+        return false;
+    }
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
     const [showLayout, setShowLayout] = useState(true);
 
+    // 1. Axios 401 Interceptor & Periodic Expiry Check
     useEffect(() => {
         setIsClient(true);
+
+        // Global Axios interceptor to catch backend 401 responses
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response && error.response.status === 401) {
+                    localStorage.removeItem("admin_token");
+                    window.location.href = "/login";
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        // Periodic check every 10 minutes to catch idle expiration
+        const interval = setInterval(() => {
+            const token = localStorage.getItem("admin_token");
+            if (token && !isTokenValid(token)) {
+                localStorage.removeItem("admin_token");
+                router.push("/login");
+            }
+        }, 600000);
+
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+            clearInterval(interval);
+        };
+    }, [router]);
+
+    // 2. Navigation & Page Load Expiry Check
+    useEffect(() => {
+        if (!isClient) return;
+
         const token = localStorage.getItem("admin_token");
-        if (!token && pathname !== "/login") {
+        const hasValidToken = isTokenValid(token);
+
+        if (!hasValidToken && token) {
+            localStorage.removeItem("admin_token");
+        }
+
+        if (!hasValidToken && pathname !== "/login") {
             setShowLayout(false);
             router.push("/login");
-        } else if (token && pathname === "/login") {
+        } else if (hasValidToken && pathname === "/login") {
             setShowLayout(false);
             router.push("/Ordersummary");
         } else {
             setShowLayout(true);
         }
-    }, [pathname, router]);
+    }, [pathname, router, isClient]);
 
     return (
         <Providers>

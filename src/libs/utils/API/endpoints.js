@@ -63,7 +63,8 @@ export const AdminUrl = {
   updateSchedulingSettings: "http://localhost:8000/settings/scheduling",
   // Customers
   getPendingCustomers: backend_url + "/admin/customers/pending",
-  updateCustomerStatus: backend_url + "/admin/customers/{id}/status",
+  updateCustomerStatus: backend_url + "/admin/customers/:id/status",
+  sendPushNotification: backend_url + "/admin/notifications/broadcast",
   // Segments
   createCustomerType: backend_url + "/admin/customer-types",
   updateCustomerType: backend_url + "/admin/customer-types/{id}",
@@ -80,6 +81,10 @@ export const AdminUrl = {
   // Settings
   getSettings: backend_url + "/admin/settings/{key}",
   updateSettings: backend_url + "/admin/settings",
+  // Media Manager
+  getMedia: backend_url + "/admin/media",
+  uploadMedia: backend_url + "/admin/media/upload",
+  deleteMedia: backend_url + "/admin/media/delete",
 };
 
 export const GoogleMapsUrl = {
