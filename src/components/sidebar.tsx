@@ -17,6 +17,9 @@ import {
   TruckIcon,
   UserGroupIcon,
   UsersIcon,
+  MapIcon,
+  MegaphoneIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 import Logo from "../../public/GoVigiLogo.png";
 import { useUI } from "../libs/Hooks/UIContext";
@@ -43,6 +46,9 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Order Summary", path: "/Ordersummary" },
       { name: "Order Assignment", path: "/order-assignment" },
+      { name: "Pending Orders", path: "/orders/pending" },
+      { name: "Delivered Orders", path: "/orders/delivered" },
+      { name: "Order Distribution", path: "/order-distribution" },
     ],
   },
   {
@@ -62,13 +68,49 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Manage Vendors", path: "/vendors" },
       { name: "Vendor Submissions", path: "/vendor-requests" },
+      { name: "Vendor Performance", path: "/vendors/performance" },
     ],
   },
-  { name: "Users", path: "/customers-dashboard", icon: UsersIcon },
+  {
+    name: "Users",
+    path: "/customers-dashboard",
+    icon: UsersIcon,
+    subItems: [
+      { name: "Manage Users", path: "/customers-dashboard" },
+      { name: "Customer Segments", path: "/customers-dashboard/segments" },
+    ],
+  },
   { name: "Delivery Partners", path: "/drivers", icon: TruckIcon },
-  { name: "Payments", path: "/finance/payments", icon: BanknotesIcon },
+  {
+    name: "Operations",
+    path: "/sourcing",
+    icon: ArrowsRightLeftIcon,
+    subItems: [
+      { name: "Order Sourcing", path: "/sourcing" },
+      { name: "Delivery Slots", path: "/scheduling" },
+      { name: "Geofencing", path: "/geofencing" },
+    ],
+  },
+  {
+    name: "Payments",
+    path: "/finance/payments",
+    icon: BanknotesIcon,
+    subItems: [
+      { name: "Order Payments", path: "/finance/payments" },
+      { name: "Vendor Settlements", path: "/finance/settlements" },
+    ],
+  },
+  {
+    name: "Marketing",
+    path: "/marketing/banners",
+    icon: MegaphoneIcon,
+    subItems: [
+      { name: "App Banners", path: "/marketing/banners" },
+      { name: "Push Broadcasts", path: "/marketing/notifications" },
+    ],
+  },
+  { name: "Media Gallery", path: "/media/gallery", icon: PhotoIcon },
   { name: "Reports", path: "/Ordersummary/stockReport", icon: DocumentTextIcon },
-  { name: "Notifications", path: "/inventory-alerts", icon: BellIcon },
   { name: "Settings", path: "/settings", icon: Cog6ToothIcon },
 ];
 
@@ -128,15 +170,15 @@ export default function Sidebar() {
         <div className={`flex h-20 items-center border-b border-gray-100 px-5 ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
           <Image src={Logo} alt="Govigi" width={42} height={42} className="h-10 w-10 object-contain" priority />
           {!isSidebarCollapsed && (
-            <div className="min-w-0">
-              <p className="text-2xl font-bold leading-7 tracking-tight text-gray-950">Govigi</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Admin Panel</p>
+            <div className="min-w-0 font-mono">
+              <p className="text-xl font-bold leading-7 uppercase tracking-wider text-gray-950">Govigi</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#10b981]">Admin Panel</p>
             </div>
           )}
         </div>
 
         {/* NAVIGATION */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-2 py-4 custom-scrollbar">
           <div className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -155,40 +197,51 @@ export default function Sidebar() {
                         goTo(item.path);
                       }
                     }}
-                    className={`group flex h-11 w-full items-center rounded-lg px-3 transition-all ${
+                    className={`group flex h-11 w-full items-center rounded-none border px-3 transition-all ${
                       isSidebarCollapsed ? "justify-center" : "justify-between"
                     } ${
                       isParentActive || pathname === item.path
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-[#10b981] border-[#10b981] text-white font-bold"
+                        : "border-transparent text-gray-700 hover:bg-gray-100 hover:border-gray-200 hover:text-gray-950"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className={`h-5 w-5 shrink-0 ${isParentActive || pathname === item.path ? "text-emerald-600" : "text-gray-400 group-hover:text-gray-600"}`} />
-                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
+                      <Icon className={`h-5 w-5 shrink-0 transition-colors ${isParentActive || pathname === item.path ? "text-white" : "text-gray-500 group-hover:text-gray-900"}`} />
+                      {!isSidebarCollapsed && (
+                        <span className="text-[11px] font-bold uppercase tracking-wider font-mono flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all ${isParentActive || pathname === item.path ? 'bg-white animate-pulse' : 'bg-gray-400 opacity-0 group-hover:opacity-100'}`} />
+                          {item.name}
+                        </span>
+                      )}
                     </div>
 
                     {!isSidebarCollapsed && hasSubItems && (
-                      <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      <ChevronDownIcon className={`h-3.5 w-3.5 text-gray-400 transition-transform duration-200 group-hover:text-gray-600 ${isOpen ? "rotate-180" : ""}`} />
                     )}
                   </button>
 
                   {/* SUBMENU ITEMS */}
                   {!isSidebarCollapsed && hasSubItems && isOpen && (
-                    <div className="mt-1 ml-4 border-l border-gray-100 pl-4 space-y-1">
-                      {item.subItems!.map((sub) => (
-                        <button
-                          key={sub.name}
-                          onClick={() => goTo(sub.path)}
-                          className={`block w-full rounded-md py-2 px-3 text-left text-sm transition-colors ${
-                            pathname === sub.path
-                              ? "font-semibold text-emerald-600"
-                              : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
-                          }`}
-                        >
-                          {sub.name}
-                        </button>
-                      ))}
+                    <div className="mt-1 ml-5 border-l border-gray-200 pl-4 space-y-1">
+                      {item.subItems!.map((sub) => {
+                        const isSubActive = pathname === sub.path;
+                        return (
+                          <button
+                            key={sub.name}
+                            onClick={() => goTo(sub.path)}
+                            className={`block w-full py-2 px-3 text-left text-[10px] font-bold uppercase tracking-wider font-mono transition-colors ${
+                              isSubActive
+                                ? "text-[#059669]"
+                                : "text-gray-600 hover:text-gray-950"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className={`w-1 h-1 rounded-full shrink-0 ${isSubActive ? 'bg-[#10b981]' : 'bg-gray-300'}`} />
+                              {sub.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
