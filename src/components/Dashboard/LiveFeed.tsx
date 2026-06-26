@@ -7,7 +7,7 @@ interface LiveFeedProps {
 
 export default function LiveFeed({ orders }: LiveFeedProps) {
     return (
-        <div className="border border-gray-200 rounded-lg bg-white h-full flex flex-col font-mono">
+        <div className="border border-gray-200 rounded-lg bg-white h-full flex flex-col font-sans">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600">Recent Transactions</h3>
                 <button className="text-[10px] text-primary hover:underline">VIEW ALL</button>
@@ -41,7 +41,7 @@ export default function LiveFeed({ orders }: LiveFeedProps) {
                                     </div>
                                 </td>
                                 <td className="p-3 text-right font-bold text-gray-900">
-                                    ₹{order.totalAmount}
+                                    ₹{Number(order.totalAmount || 0).toFixed(2)}
                                 </td>
                                 <td className="p-3 text-center">
                                     <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded font-bold

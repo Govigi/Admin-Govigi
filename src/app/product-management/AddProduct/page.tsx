@@ -11,7 +11,7 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CategoryManagementUrl, OrderSummaryUrl } from "../../../libs/utils/API/endpoints";
+import { CategoryManagementUrl, OrderSummaryUrl, SubCategoryManagementUrl } from "../../../libs/utils/API/endpoints";
 import { useLoading } from "@/src/libs/Hooks/LoadingContext";
 import { useUI } from "@/src/libs/Hooks/UIContext";
 import axios from "axios";
@@ -130,11 +130,13 @@ export default function AddProduct() {
   });
 
   const [categories, setCategories] = useState<any[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
   const [images, setImages] = useState<ImageData[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
+    fetchSubCategories();
     if (id) {
       fetchProductDetails(id);
     }
@@ -177,6 +179,19 @@ export default function AddProduct() {
     }
   };
 
+  const fetchSubCategories = async () => {
+    try {
+      const res = await fetch(SubCategoryManagementUrl.getAllSubCategories);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data.subCategories || [];
+        setSubCategories(list);
+      }
+    } catch (error) {
+      showToast(`Error fetching subcategories: ${error}`, "error");
+    }
+  };
+
   const fetchProductDetails = async (productId: string) => {
     try {
       showLoader("Loading details...");
@@ -191,7 +206,7 @@ export default function AddProduct() {
           name: product.name || "",
           sku: product.sku || generatedSkuFallback,
           category: product.category?._id || product.category || "",
-          subCategory: product.subCategory || "",
+          subCategory: product.subCategory?._id || product.subCategory || "",
           description: product.description || "",
           pricePerKg: product.pricePerKg !== undefined && product.pricePerKg !== null ? String(product.pricePerKg) : "",
           mrp: product.mrp !== undefined && product.mrp !== null ? String(product.mrp) : "",
@@ -559,17 +574,39 @@ export default function AddProduct() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Sub-Classification</label>
-                  <select
-                    className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-mono uppercase font-bold"
-                    value={formData.subCategory}
-                    onChange={(e) => updateForm("subCategory", e.target.value)}
-                    disabled={isViewMode}
-                  >
-                    <option value="">Select Sub Category</option>
-                    <option value="leafy-greens">LEAFY GREENS</option>
-                    <option value="root-vegetables">ROOT VEGETABLES</option>
-                    <option value="seasonal-produce">SEASONAL PRODUCE</option>
-                  </select>
+                  {(() => {
+                    const activeSubCategories = subCategories.filter((sub: any) => {
+                      const catId = typeof sub.category === 'object' ? sub.category?._id : sub.category;
+                      return catId === formData.category;
+                    });
+                    if (activeSubCategories.length > 0) {
+                      return (
+                        <select
+                          className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-mono uppercase font-bold text-black"
+                          value={formData.subCategory}
+                          onChange={(e) => updateForm("subCategory", e.target.value)}
+                          disabled={isViewMode}
+                        >
+                          <option value="">Select Sub Category</option>
+                          {activeSubCategories.map((sub: any) => (
+                            <option key={sub.id || sub._id} value={sub.id || sub._id}>
+                              {String(sub.subCategoryName || sub.name).toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    } else {
+                      return (
+                        <input
+                          type="text"
+                          className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors font-mono uppercase font-bold text-black bg-gray-50/50"
+                          placeholder="No subcategories found for category"
+                          value=""
+                          disabled
+                        />
+                      );
+                    }
+                  })()}
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Technical Description</label>

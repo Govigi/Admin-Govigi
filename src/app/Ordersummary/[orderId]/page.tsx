@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeftIcon, PrinterIcon, PhoneIcon, MapPinIcon, UserIcon, CheckIcon, PhotoIcon, ShoppingBagIcon, CreditCardIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { OrderSummaryUrl } from "../../../libs/utils/API/endpoints";
 import axios from "axios";
+import Breadcrumbs from "../../../components/Global/Breadcrumbs";
 
 const ORDER_STEPS = ["Pending", "Confirmed", "Shipped", "Delivered"];
 const CANCELLED_STEP = "Cancelled";
@@ -33,7 +34,7 @@ function Field({
 }: FieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-gray-400 font-mono">
+      <span className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-gray-400 font-sans">
         {label} {required && <span className="text-red-500">*</span>} {optional && <span className="font-normal">(OPTIONAL)</span>}
       </span>
       {children}
@@ -42,10 +43,10 @@ function Field({
 }
 
 const inputClass =
-  "w-full p-2 text-xs border border-gray-200 bg-gray-50/30 font-mono uppercase font-bold text-gray-700 select-all outline-none";
+  "w-full p-2 text-xs border border-gray-200 bg-gray-50/30 font-sans uppercase font-bold text-gray-700 select-all outline-none";
 
 const selectClass =
-  "w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-mono uppercase font-bold text-gray-900 cursor-pointer";
+  "w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-sans uppercase font-bold text-gray-900 cursor-pointer";
 
 export default function OrderDetailsPage() {
     const { orderId } = useParams();
@@ -56,6 +57,9 @@ export default function OrderDetailsPage() {
 
     const [statusBuffer, setStatusBuffer] = useState({ status: "", paymentStatus: "" });
     const [hasChanges, setHasChanges] = useState(false);
+    const [cancellationCharge, setCancellationCharge] = useState("0");
+    const [cancellationNote, setCancellationNote] = useState("");
+    const [processingCancellation, setProcessingCancellation] = useState(false);
 
     useEffect(() => {
         if (orderId) {
@@ -118,6 +122,8 @@ export default function OrderDetailsPage() {
                 };
                 setOrder(normalized);
                 setStatusBuffer({ status: normalized.status, paymentStatus: normalized.paymentStatus });
+                setCancellationCharge(String(o.cancellationRequest?.cancellationCharge || 0));
+                setCancellationNote(o.cancellationRequest?.adminNote || "");
                 setHasChanges(false);
             }
         } catch (error) {
@@ -172,9 +178,37 @@ export default function OrderDetailsPage() {
         window.print();
     };
 
+    const handleCancellationDecision = async (decision: "approve" | "reject") => {
+        if (!order) return;
+        if (decision === "approve" && !window.confirm("Approve cancellation and initiate the calculated Razorpay refund?")) {
+            return;
+        }
+
+        setProcessingCancellation(true);
+        try {
+            const token = localStorage.getItem("admin_token");
+            const endpoint = decision === "approve"
+                ? OrderSummaryUrl.approveCancellation(order.id)
+                : OrderSummaryUrl.rejectCancellation(order.id);
+
+            await axios.patch(endpoint, {
+                cancellationCharge: Number(cancellationCharge || 0),
+                adminNote: cancellationNote.trim()
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchOrderDetails();
+        } catch (error: any) {
+            console.error("Failed to process cancellation request", error);
+            alert(error.response?.data?.message || "Failed to process cancellation request");
+        } finally {
+            setProcessingCancellation(false);
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white font-mono text-xs tracking-widest text-gray-400 uppercase">
+            <div className="min-h-screen flex items-center justify-center bg-white font-sans text-xs tracking-widest text-gray-400 uppercase">
                 LOADING ORDER DETAILS...
             </div>
         );
@@ -182,7 +216,7 @@ export default function OrderDetailsPage() {
 
     if (!order) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-white font-mono text-gray-500">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white font-sans text-gray-500">
                 <div className="mb-4 text-xs tracking-widest uppercase font-bold">Order Not Found</div>
                 <button
                     onClick={() => router.back()}
@@ -215,7 +249,7 @@ export default function OrderDetailsPage() {
     return (
         <>
             {/* PRINT-ONLY INVOICE LAYOUT */}
-            <div className="hidden print:block font-mono p-8 text-black bg-white">
+            <div className="hidden print:block font-sans p-8 text-black bg-white">
                 <div className="flex justify-between items-start mb-12 border-b-2 border-black pb-8">
                     <div>
                         <h1 className="text-2xl font-bold tracking-widest uppercase mb-2">GOVIGI</h1>
@@ -264,9 +298,9 @@ export default function OrderDetailsPage() {
                                 <td className="py-4 text-xs">
                                     <div className="font-bold text-gray-950">{item.name.toUpperCase()}</div>
                                 </td>
-                                <td className="py-4 text-right text-xs font-bold">₹{item.price}</td>
+                                <td className="py-4 text-right text-xs font-bold">₹{Number(item.price).toFixed(2)}</td>
                                 <td className="py-4 text-right text-xs font-bold">{item.quantity} {item.unit.toUpperCase()}</td>
-                                <td className="py-4 text-right text-xs font-bold text-gray-950">₹{(item.price * item.quantity).toLocaleString()}</td>
+                                <td className="py-4 text-right text-xs font-bold text-gray-950">₹{(item.price * item.quantity).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -276,7 +310,7 @@ export default function OrderDetailsPage() {
                     <div className="w-1/2">
                         <div className="flex justify-between py-2 border-b border-gray-100">
                             <span className="text-[10px] font-bold uppercase text-gray-450">Subtotal</span>
-                            <span className="text-xs font-bold">₹{order.totalAmount.toLocaleString()}</span>
+                            <span className="text-xs font-bold">₹{order.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-gray-100">
                             <span className="text-[10px] font-bold uppercase text-gray-450">Delivery</span>
@@ -284,7 +318,7 @@ export default function OrderDetailsPage() {
                         </div>
                         <div className="flex justify-between py-4 border-b-2 border-black mt-2">
                             <span className="text-xs font-bold uppercase">Total</span>
-                            <span className="text-sm font-bold">₹{order.totalAmount.toLocaleString()}</span>
+                            <span className="text-sm font-bold">₹{order.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </div>
@@ -295,25 +329,26 @@ export default function OrderDetailsPage() {
             </div>
 
             {/* SCREEN LAYOUT (Hidden on print) */}
-            <div className="h-full lg:h-full bg-gray-50/50 p-4 lg:p-6 lg:pb-4 font-mono text-gray-900 overflow-hidden flex flex-col print:hidden">
+            <div className="h-full lg:h-full bg-gray-50/50 p-4 lg:p-6 lg:pb-4 font-sans text-gray-900 overflow-hidden flex flex-col print:hidden">
                 <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0 overflow-hidden">
                     
-                    {/* Page Header */}
-                    <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-gray-200 pb-3 shrink-0">
-                        <div>
-                            <h1 className="text-lg font-bold uppercase tracking-widest text-[#10b981]">
-                                ORDER PROFILE
-                            </h1>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Manage, dispatch, and review details for Order #{order.orderId}</p>
-                        </div>
+                    {/* Page Breadcrumbs */}
+                    <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3 shrink-0">
+                        <Breadcrumbs 
+                            items={[
+                                { label: "Dashboard", href: "/Dashboard" },
+                                { label: "Orders", href: "/Ordersummary" },
+                                { label: `Order #${order.orderId}` }
+                            ]}
+                        />
 
                         <button
                             type="button"
                             onClick={() => router.back()}
-                            className="flex h-8 items-center gap-3 border border-gray-200 bg-white px-4 text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black hover:border-black transition-all"
+                            className="flex h-7 items-center gap-2 border border-gray-200 bg-white px-3 text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black hover:border-black transition-all"
                         >
-                            <ArrowLeftIcon className="h-3.5 w-3.5" />
-                            RETURN TO SUMMARY
+                            <ArrowLeftIcon className="h-3 w-3" />
+                            Back
                         </button>
                     </div>
 
@@ -386,7 +421,9 @@ export default function OrderDetailsPage() {
                                                 className={selectClass}
                                             >
                                                 {ORDER_STEPS.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-                                                <option value={CANCELLED_STEP}>{CANCELLED_STEP.toUpperCase()}</option>
+                                                {!(order.paymentMethod === "Online" && order.paymentStatus === "Paid") && (
+                                                    <option value={CANCELLED_STEP}>{CANCELLED_STEP.toUpperCase()}</option>
+                                                )}
                                             </select>
                                         </Field>
 
@@ -398,6 +435,11 @@ export default function OrderDetailsPage() {
                                             >
                                                 <option value="Pending">PENDING</option>
                                                 <option value="Paid">PAID</option>
+                                                <option value="Refund Initiating">REFUND INITIATING</option>
+                                                <option value="Refund Initiated">REFUND INITIATED</option>
+                                                <option value="Refund Processing">REFUND PROCESSING</option>
+                                                <option value="Refunded">REFUNDED</option>
+                                                <option value="Refund Failed">REFUND FAILED</option>
                                             </select>
                                         </Field>
                                     </div>
@@ -428,6 +470,96 @@ export default function OrderDetailsPage() {
 
                         {/* Right Columns: Orders Details Grid */}
                         <div className="lg:col-span-2 lg:h-full lg:overflow-y-auto pr-2 space-y-6 scrollbar-thin">
+                            {order.cancellationRequest?.status && order.cancellationRequest.status !== "None" && (
+                                <Panel className="p-6 shadow-sm">
+                                    <div className="flex items-center justify-between mb-5 border-b border-gray-100 pb-3">
+                                        <h2 className="text-sm font-bold uppercase text-[#059669]">Cancellation & Refund</h2>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 px-2 py-1">
+                                            {order.cancellationRequest.status}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                        <Field label="Customer Reason">
+                                            <div className={inputClass}>{order.cancellationRequest.reasonCode || "N/A"}</div>
+                                        </Field>
+                                        <Field label="Requested At">
+                                            <div className={inputClass}>
+                                                {order.cancellationRequest.requestedAt ? new Date(order.cancellationRequest.requestedAt).toLocaleString() : "N/A"}
+                                            </div>
+                                        </Field>
+                                        {order.cancellationRequest.reasonText && (
+                                            <div className="md:col-span-2">
+                                                <Field label="Customer Note">
+                                                    <div className="w-full p-2 text-xs border border-gray-200 bg-gray-50/30 font-sans font-bold text-gray-700">
+                                                        {order.cancellationRequest.reasonText}
+                                                    </div>
+                                                </Field>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {order.cancellationRequest.status === "Pending Approval" ? (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                <Field label="Cancellation Charge (INR)">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max={Math.max(0, order.totalAmount - (order.walletAmountUsed || 0))}
+                                                        value={cancellationCharge}
+                                                        onChange={(event) => setCancellationCharge(event.target.value)}
+                                                        className={inputClass}
+                                                    />
+                                                </Field>
+                                                <Field label="Estimated Refund">
+                                                    <div className={inputClass}>
+                                                        ₹{Math.max(0, order.totalAmount - (order.walletAmountUsed || 0) - Number(cancellationCharge || 0)).toFixed(2)}
+                                                    </div>
+                                                </Field>
+                                                <div className="md:col-span-2">
+                                                    <Field label="Admin Note" optional>
+                                                        <textarea
+                                                            value={cancellationNote}
+                                                            onChange={(event) => setCancellationNote(event.target.value)}
+                                                            className={`${inputClass} min-h-16 normal-case`}
+                                                        />
+                                                    </Field>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    disabled={processingCancellation}
+                                                    onClick={() => handleCancellationDecision("approve")}
+                                                    className="bg-[#059669] px-5 py-3 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50"
+                                                >
+                                                    {processingCancellation ? "PROCESSING..." : "APPROVE & INITIATE REFUND"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={processingCancellation}
+                                                    onClick={() => handleCancellationDecision("reject")}
+                                                    className="border border-red-300 text-red-700 px-5 py-3 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                                                >
+                                                    REJECT REQUEST
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <Field label="Refund Status">
+                                                <div className={inputClass}>{order.refund?.status || "N/A"}</div>
+                                            </Field>
+                                            <Field label="Cancellation Charge">
+                                                <div className={inputClass}>₹{Number(order.refund?.cancellationCharge || 0).toFixed(2)}</div>
+                                            </Field>
+                                            <Field label="Refund Amount">
+                                                <div className={inputClass}>₹{Number(order.refund?.amount || 0).toFixed(2)}</div>
+                                            </Field>
+                                        </div>
+                                    )}
+                                </Panel>
+                            )}
                             
                             {/* Ordered Items */}
                             <Panel className="p-6 shadow-sm">
@@ -472,14 +604,14 @@ export default function OrderDetailsPage() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-gray-500 font-mono font-bold">
-                                                        ₹{item.price}
+                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-gray-500 font-sans font-bold">
+                                                        ₹{Number(item.price).toFixed(2)}
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-gray-800 font-mono font-bold">
+                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-gray-800 font-sans font-bold">
                                                         {item.quantity} {item.unit.toUpperCase()}
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-gray-900 font-mono font-black">
-                                                        ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-gray-900 font-sans font-black">
+                                                        ₹{(item.price * item.quantity).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -492,7 +624,7 @@ export default function OrderDetailsPage() {
                                     <div className="w-full md:w-80 space-y-2">
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-gray-400 font-bold uppercase">Subtotal</span>
-                                            <span className="text-gray-900 font-mono font-black">₹{order.totalAmount.toLocaleString("en-IN")}</span>
+                                            <span className="text-gray-900 font-sans font-black">₹{order.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-gray-400 font-bold uppercase">Delivery</span>
@@ -501,7 +633,7 @@ export default function OrderDetailsPage() {
                                         <div className="h-px w-full bg-gray-200 my-1"></div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-gray-900 font-bold uppercase">Total Price</span>
-                                            <span className="text-gray-900 font-mono font-black text-base">₹{order.totalAmount.toLocaleString("en-IN")}</span>
+                                            <span className="text-gray-900 font-sans font-black text-base">₹{order.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                         <div className={`mt-4 py-2 px-3 border flex items-center justify-center gap-2 font-bold text-[9px] uppercase tracking-wider ${
                                             isPaid ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-amber-50 border-amber-300 text-amber-700"
@@ -537,7 +669,7 @@ export default function OrderDetailsPage() {
                                     </Field>
                                     <div className="md:col-span-2">
                                         <Field label="Shipping Address">
-                                            <div className="w-full p-2.5 text-xs border border-gray-200 bg-gray-50/30 font-mono uppercase font-bold text-gray-700 leading-relaxed min-h-16">
+                                            <div className="w-full p-2.5 text-xs border border-gray-200 bg-gray-50/30 font-sans font-bold text-gray-700 leading-relaxed min-h-16">
                                                 {order.customerAddress}
                                             </div>
                                         </Field>
@@ -572,7 +704,7 @@ export default function OrderDetailsPage() {
                                         {order.vendorId.address && (
                                             <div className="md:col-span-2">
                                                 <Field label="Vendor Address">
-                                                    <div className="w-full p-2.5 text-xs border border-gray-200 bg-gray-50/30 font-mono uppercase font-bold text-gray-700 leading-relaxed min-h-16">
+                                                    <div className="w-full p-2.5 text-xs border border-gray-200 bg-gray-50/30 font-sans uppercase font-bold text-gray-700 leading-relaxed min-h-16">
                                                         {order.vendorId.address}
                                                     </div>
                                                 </Field>

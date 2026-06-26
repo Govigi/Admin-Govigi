@@ -83,58 +83,103 @@ export default function PendingOrdersPage() {
         });
     }, [orders, searchQuery, statusFilter, dateFilter]);
 
+    // KPI Summary counts
+    const kpiSummary = useMemo(() => {
+        const pendingCount = orders.filter(o => o.status.toLowerCase() === "pending").length;
+        const processingCount = orders.filter(o => ["processing", "confirmed"].includes(o.status.toLowerCase())).length;
+        const totalValue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        return {
+            pendingCount,
+            processingCount,
+            totalValue
+        };
+    }, [orders]);
+
     return (
-        <div className="min-h-screen bg-white p-6 md:p-8 font-mono text-gray-900">
-            <div className="mb-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="min-h-screen bg-white p-4 md:p-8 font-sans text-gray-900">
+            {/* Header */}
+            <div className="mb-8 border-b border-gray-200 pb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-bold uppercase tracking-widest text-[#10b981]">Pending Orders</h1>
-                    <p className="text-xs text-gray-400 mt-1">
-                        Active Orders Pipeline
+                    <h1 className="text-xl font-bold uppercase tracking-widest text-gray-950">Pending Orders</h1>
+                    <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">
+                        Manage active orders pipeline and deliveries
                     </p>
                 </div>
+            </div>
 
-                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 border border-gray-200 bg-white rounded-lg">
+                    <div className="text-[10px] text-gray-400 tracking-widest uppercase mb-1">Pending Confirmation</div>
+                    <div className="text-2xl font-bold text-yellow-600">{kpiSummary.pendingCount}</div>
+                    <div className="text-xs mt-1 text-gray-400">Awaiting dispatch/approval</div>
+                </div>
+                <div className="p-4 border border-gray-200 bg-white rounded-lg">
+                    <div className="text-[10px] text-gray-400 tracking-widest uppercase mb-1">Confirmed / Processing</div>
+                    <div className="text-2xl font-bold text-blue-600">{kpiSummary.processingCount}</div>
+                    <div className="text-xs mt-1 text-gray-400">Currently being fulfilled</div>
+                </div>
+                <div className="p-4 border border-gray-200 bg-white rounded-lg">
+                    <div className="text-[10px] text-gray-400 tracking-widest uppercase mb-1">Pipeline Value</div>
+                    <div className="text-2xl font-bold text-gray-900">₹{kpiSummary.totalValue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="text-xs mt-1 text-gray-400">Gross value of active orders</div>
+                </div>
+            </div>
+
+            {/* Filter Controls Panel */}
+            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {/* Search Bar */}
-                    <div className="relative group">
-                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="SEARCH ORDER ID, NAME, PHONE..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-200 text-xs w-full md:w-64 focus:outline-none focus:border-black transition-colors uppercase placeholder-gray-300"
-                        />
+                    <div>
+                        <label className="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Search Order</label>
+                        <div className="relative">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="SEARCH ORDER ID, NAME, PHONE..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 pr-4 py-2 w-full bg-white border border-gray-200 text-xs rounded focus:outline-none focus:ring-1 focus:ring-gray-950 uppercase placeholder-gray-300"
+                            />
+                        </div>
                     </div>
 
                     {/* Status Filter */}
-                    <div className="relative">
-                        <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="pl-9 pr-8 py-2 border border-gray-200 text-xs w-full md:w-40 focus:outline-none focus:border-black appearance-none bg-transparent uppercase cursor-pointer"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="processing">Processing</option>
-                        </select>
+                    <div>
+                        <label className="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Filter Status</label>
+                        <div className="relative">
+                            <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="pl-9 pr-4 py-2 w-full bg-white border border-gray-200 text-xs rounded focus:outline-none focus:ring-1 focus:ring-gray-950 uppercase cursor-pointer"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="processing">Processing</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Date Filter */}
-                    <div className="relative">
-                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="date"
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-200 text-xs w-full focus:outline-none focus:border-black uppercase bg-transparent"
-                        />
+                    <div>
+                        <label className="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Delivery Date</label>
+                        <div className="relative">
+                            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="date"
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="pl-9 pr-4 py-2 w-full bg-white border border-gray-200 text-xs rounded focus:outline-none focus:ring-1 focus:ring-gray-950 uppercase"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-4 h-[calc(100vh-200px)]">
+            {/* Orders Panel Content */}
+            <div className="border border-gray-200 rounded-lg p-4 bg-white min-h-[500px]">
                 <OrdersPanel
                     orders={filteredOrders}
                     loading={loading}

@@ -16,6 +16,8 @@ export const OrderSummaryUrl = {
   getUserOrders: backend_url + "/userOrders",
   createOrder: backend_url + "/createOrder",
   getOrderById: backend_url + "/getOrder",
+  approveCancellation: (id) => `${backend_url}/admin/orders/${id}/cancellation/approve`,
+  rejectCancellation: (id) => `${backend_url}/admin/orders/${id}/cancellation/reject`,
 };
 
 export const ProductManagementUrl = {
@@ -33,6 +35,13 @@ export const CategoryManagementUrl = {
   deleteCategory: backend_url + "/deleteCategory", // /:id
   getAllCategoriesStats: backend_url + "/getAllCategoriesStats",
   getAllCategories: backend_url + "/getAllCategories",
+};
+
+export const SubCategoryManagementUrl = {
+  createSubCategory: backend_url + "/createSubCategory",
+  updateSubCategory: backend_url + "/updateSubCategory", // /:id
+  deleteSubCategory: backend_url + "/deleteSubCategory", // /:id
+  getAllSubCategories: backend_url + "/getAllSubCategories",
 };
 
 export const CustomerDashboardUrl = {
@@ -65,6 +74,7 @@ export const AdminUrl = {
   getPendingCustomers: backend_url + "/admin/customers/pending",
   updateCustomerStatus: backend_url + "/admin/customers/:id/status",
   sendPushNotification: backend_url + "/admin/notifications/broadcast",
+  sendVendorPushNotification: backend_url + "/admin/notifications/vendor/broadcast",
   // Segments
   createCustomerType: backend_url + "/admin/customer-types",
   updateCustomerType: backend_url + "/admin/customer-types/{id}",
@@ -80,7 +90,17 @@ export const AdminUrl = {
   getTransactions: backend_url + "/admin/finance/transactions",
   // Settings
   getSettings: backend_url + "/admin/settings/{key}",
+  getWalletSettings: backend_url + "/admin/settings/wallet",
+  updateWalletSettings: backend_url + "/admin/settings/wallet",
   updateSettings: backend_url + "/admin/settings",
+
+  //Delivery Settings
+  getDeliverySettings: backend_url + "/admin/settings/delivery",
+  updateDeliverySettings: backend_url + "/admin/settings/delivery",
+
+  getOrderBookingSettings: backend_url + "/admin/settings/order-booking",
+  updateOrderBookingSettings: backend_url + "/admin/settings/order-booking",
+  changePassword: backend_url + "/admin/change-password",
   // Media Manager
   getMedia: backend_url + "/admin/media",
   uploadMedia: backend_url + "/admin/media/upload",
@@ -115,3 +135,9 @@ export const SourcingUrl = {
   getNearbyVendors: backend_url + "/sourcing/vendors",
   assignOrders: backend_url + "/sourcing/assign",
 };
+
+export const ReportUrl = {
+  generateReport: backend_url + "/admin/reports/generate",
+};
+
+
