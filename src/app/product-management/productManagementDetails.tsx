@@ -94,7 +94,7 @@ export default function ProductManagementDetails() {
           prod.name || "",
           prod.sku || "",
           categoryName,
-          prod.subCategory || "",
+          typeof prod.subCategory === "object" ? prod.subCategory?.subCategoryName || prod.subCategory?.name || "" : prod.subCategory || "",
           prod.description || "",
           prod.unit || "",
           prod.pricePerKg !== undefined ? String(prod.pricePerKg) : "",

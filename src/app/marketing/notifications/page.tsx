@@ -13,12 +13,28 @@ interface Segment {
     discountPercentage?: number;
 }
 
+const VENDOR_BUSINESS_TYPES = [
+    { value: "all", label: "Broadcast to All Vendors" },
+    { value: "Retailer", label: "Retailer Vendors" },
+    { value: "Wholesaler", label: "Wholesaler Vendors" },
+    { value: "RETAIL_STORE", label: "Retail Store Vendors" },
+    { value: "WHOLESALE", label: "Wholesale Vendors" },
+    { value: "MANUFACTURER", label: "Manufacturer Vendors" },
+    { value: "DISTRIBUTOR", label: "Distributor Vendors" },
+    { value: "IMPORTER", label: "Importer Vendors" },
+    { value: "EXPORTER", label: "Exporter Vendors" },
+    { value: "SERVICE_PROVIDER", label: "Service Provider Vendors" },
+    { value: "FARMER", label: "Farmer Vendors" },
+    { value: "OTHER", label: "Other Vendors" }
+];
+
 export default function PushNotificationsPage() {
     const { showToast } = useUI();
     const [segments, setSegments] = useState<Segment[]>([]);
     const [loadingSegments, setLoadingSegments] = useState(true);
     const [sending, setSending] = useState(false);
 
+    const [activeAudience, setActiveAudience] = useState<"customer" | "vendor">("customer");
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
     const [selectedSegment, setSelectedSegment] = useState("all");
@@ -113,8 +129,9 @@ export default function PushNotificationsPage() {
         setSending(true);
         try {
             const token = localStorage.getItem("admin_token");
+            const endpoint = activeAudience === "customer" ? AdminUrl.sendPushNotification : AdminUrl.sendVendorPushNotification;
             const response = await axios.post(
-                AdminUrl.sendPushNotification,
+                endpoint,
                 {
                     title: title.trim(),
                     body: body.trim(),
@@ -162,27 +179,71 @@ export default function PushNotificationsPage() {
                                 Compose Notification
                             </h2>
 
+                            {/* Audience Switcher Tabs */}
+                            <div className="flex border-b border-gray-200">
+                                <button
+                                    onClick={() => {
+                                        setActiveAudience("customer");
+                                        setSelectedSegment("all");
+                                    }}
+                                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all ${
+                                        activeAudience === "customer"
+                                            ? "border-[#10b981] text-[#10b981]"
+                                            : "border-transparent text-gray-400 hover:text-gray-600"
+                                    }`}
+                                >
+                                    Customer Audience
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveAudience("vendor");
+                                        setSelectedSegment("all");
+                                    }}
+                                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 transition-all ${
+                                        activeAudience === "vendor"
+                                            ? "border-[#10b981] text-[#10b981]"
+                                            : "border-transparent text-gray-400 hover:text-gray-600"
+                                    }`}
+                                >
+                                    Vendor Audience
+                                </button>
+                            </div>
+
                             <div className="space-y-4">
                                 {/* Segment dropdown */}
                                 <div>
                                     <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Target Audience</label>
                                     <div className="relative">
-                                        <select
-                                            className="w-full p-2.5 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-mono uppercase"
-                                            value={selectedSegment}
-                                            onChange={(e) => setSelectedSegment(e.target.value)}
-                                        >
-                                            <option value="all">Broadcast to All Customers</option>
-                                            {loadingSegments ? (
-                                                <option disabled>Loading dynamic segments...</option>
-                                            ) : (
-                                                segments.map((seg) => (
-                                                    <option key={seg._id} value={seg._id}>
-                                                        Segment: {seg.typeName.toUpperCase()} ({seg.discountPercentage}% OFF)
+                                        {activeAudience === "customer" ? (
+                                            <select
+                                                className="w-full p-2.5 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-mono uppercase"
+                                                value={selectedSegment}
+                                                onChange={(e) => setSelectedSegment(e.target.value)}
+                                            >
+                                                <option value="all">Broadcast to All Customers</option>
+                                                {loadingSegments ? (
+                                                    <option disabled>Loading dynamic segments...</option>
+                                                ) : (
+                                                    segments.map((seg) => (
+                                                        <option key={seg._id} value={seg._id}>
+                                                            Segment: {seg.typeName.toUpperCase()} ({seg.discountPercentage}% OFF)
+                                                        </option>
+                                                    ))
+                                                )}
+                                            </select>
+                                        ) : (
+                                            <select
+                                                className="w-full p-2.5 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white font-mono uppercase"
+                                                value={selectedSegment}
+                                                onChange={(e) => setSelectedSegment(e.target.value)}
+                                            >
+                                                {VENDOR_BUSINESS_TYPES.map((bt) => (
+                                                    <option key={bt.value} value={bt.value}>
+                                                        {bt.label}
                                                     </option>
-                                                ))
-                                            )}
-                                        </select>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
@@ -365,7 +426,7 @@ export default function PushNotificationsPage() {
                                         <div className="flex justify-between items-center mb-1 text-[8px] text-white/60">
                                             <div className="flex items-center gap-1">
                                                 <div className="w-3.5 h-3.5 rounded bg-[#10b981] flex items-center justify-center text-white text-[7px] font-bold">G</div>
-                                                <span className="font-bold tracking-wide uppercase text-[7px]">GOVIGI</span>
+                                                <span className="font-bold tracking-wide uppercase text-[7px]">{activeAudience === "customer" ? "GOVIGI" : "GOVIGI VENDOR"}</span>
                                             </div>
                                             <span>now</span>
                                         </div>
@@ -393,7 +454,7 @@ export default function PushNotificationsPage() {
                             {/* Extra Info */}
                             <div className="mt-6 text-center space-y-1 w-full border-t border-gray-100 pt-4">
                                 <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Notification Channels</p>
-                                <p className="text-[9px] text-gray-500">Delivered via Expo Push Token Gateway.</p>
+                                <p className="text-[9px] text-gray-500">{activeAudience === "customer" ? "Delivered via Expo Push Token Gateway." : "Delivered via Native FCM / Expo Gateway."}</p>
                             </div>
                         </div>
                     </div>

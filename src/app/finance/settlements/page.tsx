@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { 
-    MagnifyingGlassIcon, 
-    ArrowPathIcon, 
-    BanknotesIcon, 
-    ShieldExclamationIcon, 
+import {
+    MagnifyingGlassIcon,
+    ArrowPathIcon,
+    BanknotesIcon,
+    ShieldExclamationIcon,
     CheckCircleIcon,
     XCircleIcon,
     ArrowDownIcon,
@@ -15,11 +15,11 @@ import {
     ListBulletIcon
 } from "@heroicons/react/24/outline";
 import DataTable from "react-data-table-component";
-import { 
-    getVendorsPerformance, 
-    recordVendorPayout, 
-    processEmergencyPayout, 
-    updateVendorPayoutSettings 
+import {
+    getVendorsPerformance,
+    recordVendorPayout,
+    processEmergencyPayout,
+    updateVendorPayoutSettings
 } from "../../../libs/vendorService";
 
 interface VendorSettlement {
@@ -157,7 +157,7 @@ export default function VendorSettlementsPage() {
     };
 
     const filteredVendors = useMemo(() => {
-        return vendors.filter(v => 
+        return vendors.filter(v =>
             v.businessName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             v.vendorCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             v.contactPerson?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,7 +169,7 @@ export default function VendorSettlementsPage() {
         const totalEarnings = vendors.reduce((acc, curr) => acc + (curr.performance?.totalEarnings || 0), 0);
         const totalSettled = vendors.reduce((acc, curr) => acc + (curr.settledAmount || 0), 0);
         const outstanding = vendors.reduce((acc, curr) => acc + (curr.performance?.outstandingBalance || 0), 0);
-        
+
         let pendingRequestsCount = 0;
         vendors.forEach(v => {
             v.payoutHistory?.forEach(p => {
@@ -340,7 +340,7 @@ export default function VendorSettlementsPage() {
             cell: (row: VendorSettlement) => (
                 <span className="font-mono font-bold text-gray-800">₹{(row.performance?.totalEarnings || 0).toLocaleString("en-IN")}</span>
             ),
-            right: true,
+            right: "true" as any,
         },
         {
             name: "Settled",
@@ -349,7 +349,7 @@ export default function VendorSettlementsPage() {
             cell: (row: VendorSettlement) => (
                 <span className="font-mono font-bold text-emerald-600">₹{(row.settledAmount || 0).toLocaleString("en-IN")}</span>
             ),
-            right: true,
+            right: "true" as any,
         },
         {
             name: "Outstanding",
@@ -358,19 +358,19 @@ export default function VendorSettlementsPage() {
             cell: (row: VendorSettlement) => (
                 <span className="font-mono font-bold text-orange-600">₹{(row.performance?.outstandingBalance || 0).toLocaleString("en-IN")}</span>
             ),
-            right: true,
+            right: "true" as any,
         },
         {
             name: "Actions",
             cell: (row: VendorSettlement) => (
                 <div className="flex gap-2">
-                    <button 
+                    <button
                         onClick={() => handleOpenPayout(row)}
                         className="px-3 py-1 bg-black text-white hover:bg-emerald-600 text-[10px] font-bold uppercase transition-all rounded-none"
                     >
                         Settle
                     </button>
-                    <button 
+                    <button
                         onClick={() => handleOpenSettings(row)}
                         className="p-1 border border-gray-200 hover:border-black text-gray-500 hover:text-black rounded-none"
                         title="Configure Payout Settings"
@@ -386,7 +386,7 @@ export default function VendorSettlementsPage() {
 
     return (
         <div className="min-h-screen bg-white p-6 md:p-8 font-inter text-gray-900 w-full overflow-x-hidden pb-24">
-            
+
             {/* Header */}
             <div className="mb-8 border-b border-gray-200 pb-4">
                 <h1 className="text-xl font-bold uppercase tracking-widest text-[#10b981] border-l-4 border-[#10b981] pl-4">
@@ -417,17 +417,15 @@ export default function VendorSettlementsPage() {
             <div className="flex border-b border-gray-200 mb-6">
                 <button
                     onClick={() => setActiveTab("ledger")}
-                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider font-mono border-b-2 transition-all ${
-                        activeTab === "ledger" ? "border-black text-black" : "border-transparent text-gray-400 hover:text-black"
-                    }`}
+                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider font-mono border-b-2 transition-all ${activeTab === "ledger" ? "border-black text-black" : "border-transparent text-gray-400 hover:text-black"
+                        }`}
                 >
                     Settlement Ledger
                 </button>
                 <button
                     onClick={() => setActiveTab("emergency")}
-                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider font-mono border-b-2 transition-all flex items-center gap-1.5 ${
-                        activeTab === "emergency" ? "border-red-600 text-red-600" : "border-transparent text-gray-400 hover:text-red-500"
-                    }`}
+                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider font-mono border-b-2 transition-all flex items-center gap-1.5 ${activeTab === "emergency" ? "border-red-600 text-red-600" : "border-transparent text-gray-400 hover:text-red-500"
+                        }`}
                 >
                     Emergency Requests {pendingEmergencyRequests.length > 0 && (
                         <span className="w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
@@ -435,9 +433,8 @@ export default function VendorSettlementsPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab("history")}
-                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider font-mono border-b-2 transition-all ${
-                        activeTab === "history" ? "border-black text-black" : "border-transparent text-gray-400 hover:text-black"
-                    }`}
+                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider font-mono border-b-2 transition-all ${activeTab === "history" ? "border-black text-black" : "border-transparent text-gray-400 hover:text-black"
+                        }`}
                 >
                     Payout History
                 </button>
@@ -519,13 +516,13 @@ export default function VendorSettlementsPage() {
                                         <span className="text-xl font-black text-red-600 font-mono">₹{payout.amount.toLocaleString("en-IN")}</span>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button 
+                                        <button
                                             onClick={() => handleOpenProcess(vendor, payout)}
                                             className="px-4 py-2 bg-black text-white hover:bg-emerald-600 text-xs font-bold uppercase transition-all rounded-none"
                                         >
                                             Process Payout
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 if (confirm("Reject this emergency payout request?")) {
                                                     setProcessModalPayout({ vendor, payout });
@@ -589,8 +586,8 @@ export default function VendorSettlementsPage() {
                                             <td className="p-4 text-center">
                                                 <span className={`px-1.5 py-0.5 text-[9px] font-bold border uppercase
                                                     ${payout.status === "Paid" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                                      payout.status === "Pending" ? "bg-amber-50 text-amber-600 border-amber-100" :
-                                                      "bg-red-50 text-red-600 border-red-100"}
+                                                        payout.status === "Pending" ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                                            "bg-red-50 text-red-600 border-red-100"}
                                                 `}>
                                                     {payout.status}
                                                 </span>
@@ -617,7 +614,7 @@ export default function VendorSettlementsPage() {
             {payoutModalVendor && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <form onSubmit={handleRecordPayoutSubmit} className="bg-white w-full max-w-md border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
-                        
+
                         <div className="p-6 border-b-2 border-black bg-gray-50 flex justify-between items-center">
                             <div>
                                 <h3 className="text-xs font-bold uppercase font-mono text-gray-500">Record Payout</h3>
@@ -629,7 +626,7 @@ export default function VendorSettlementsPage() {
                         </div>
 
                         <div className="p-6 space-y-4 font-mono text-xs text-gray-600">
-                            
+
                             <div className="p-3 bg-orange-50 border border-orange-100 flex justify-between items-center text-orange-800">
                                 <span>NET OUTSTANDING AMOUNT:</span>
                                 <span className="font-bold text-sm">₹{payoutModalVendor.performance?.outstandingBalance.toLocaleString("en-IN")}</span>
@@ -713,7 +710,7 @@ export default function VendorSettlementsPage() {
             {settingsModalVendor && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <form onSubmit={handleSaveSettingsSubmit} className="bg-white w-full max-w-md border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
-                        
+
                         <div className="p-6 border-b-2 border-black bg-gray-50 flex justify-between items-center">
                             <div>
                                 <h3 className="text-xs font-bold uppercase font-mono text-gray-500">Configure Payouts</h3>
@@ -725,7 +722,7 @@ export default function VendorSettlementsPage() {
                         </div>
 
                         <div className="p-6 space-y-4 font-mono text-xs text-gray-600">
-                            
+
                             <div className="flex flex-col gap-1.5">
                                 <label className="font-bold uppercase text-[10px] text-gray-700">Preferred Payout Frequency</label>
                                 <select
@@ -772,7 +769,7 @@ export default function VendorSettlementsPage() {
             {processModalPayout && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-md border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
-                        
+
                         <div className="p-6 border-b-2 border-black bg-gray-50 flex justify-between items-center">
                             <div>
                                 <h3 className="text-xs font-bold uppercase font-mono text-gray-500 text-red-600 animate-pulse">Settle Emergency Payout</h3>
@@ -784,7 +781,7 @@ export default function VendorSettlementsPage() {
                         </div>
 
                         <div className="p-6 space-y-4 font-mono text-xs text-gray-600">
-                            
+
                             <div className="p-4 bg-red-50 border border-red-200 text-red-800 space-y-1">
                                 <div className="flex justify-between items-center font-bold">
                                     <span>REQUESTED PRIORITY PAYOUT:</span>
@@ -850,7 +847,7 @@ export default function VendorSettlementsPage() {
                             <button type="button" onClick={() => setProcessModalPayout(null)} className="px-4 py-2 border border-gray-200 text-xs font-bold uppercase hover:bg-white text-gray-500 rounded-none">
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleProcessRequest("Paid")}
                                 className="px-6 py-2 bg-black text-white hover:bg-emerald-600 text-xs font-bold uppercase transition-all rounded-none"
                             >

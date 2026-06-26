@@ -13,7 +13,7 @@ export default function ActionRequired({ orders, lowStockProducts }: ActionRequi
         .slice(0, 5); // Top 5
 
     return (
-        <div className="border border-gray-200 rounded-lg bg-white h-full flex flex-col font-mono">
+        <div className="border border-gray-200 rounded-lg bg-white h-full flex flex-col font-sans">
             <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600">Action Required</h3>
                 <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
@@ -34,7 +34,7 @@ export default function ActionRequired({ orders, lowStockProducts }: ActionRequi
                                 <div>
                                     <div className="font-bold text-sm">#{order.orderId || order._id?.slice(-6).toUpperCase()}</div>
                                     <div className="text-xs text-gray-500">
-                                        {(order.items || []).length} items • ₹{order.totalAmount}
+                                        {(order.items || []).length} items • ₹{Number(order.totalAmount || 0).toFixed(2)}
                                     </div>
                                 </div>
                                 <div className="text-right">

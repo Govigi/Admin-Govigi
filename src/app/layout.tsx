@@ -4,21 +4,25 @@ export const revalidate = 0;
 
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Outfit, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const inter = Inter({
-  variable: "--font-inter",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-      </head>
-      <body className={`${inter.className} ${geistMono.variable} antialiased font-inter`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${plusJakartaSans.className} ${plusJakartaSans.variable} ${plusJakartaSans.variable} antialiased`}>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

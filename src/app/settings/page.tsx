@@ -14,6 +14,13 @@ type DeliveryZone = {
 
 export default function Settings() {
     const [walletPercentage, setWalletPercentage] = useState<number>(30);
+    const [orderBooking, setOrderBooking] = useState({
+        minimumOrderAmount: 499,
+        minimumOrderEnabled: true,
+        deliveryFee: 0,
+        freeDeliveriesPerCustomer: 0,
+        freeDeliveryEnabled: false,
+    });
     const [zones, setZones] = useState<DeliveryZone[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -25,9 +32,10 @@ export default function Settings() {
         const load = async () => {
             setLoading(true);
             try {
-                const [walletRes, zoneRes] = await Promise.all([
-                    axios.get(AdminUrl.updateSettings + "/wallet"),
-                    axios.get(AdminUrl.getSettings.replace("{key}", "delivery_zones"))
+                const [walletRes, zoneRes, orderBookingRes] = await Promise.all([
+                    axios.get(AdminUrl.getSchedulingSettings.replace("/settings/scheduling", "/admin/settings/wallet")),
+                    axios.get(AdminUrl.getSettings.replace("{key}", "delivery_zones")),
+                    axios.get(AdminUrl.getOrderBookingSettings)
                 ]);
 
                 if (walletRes.data.percentage !== undefined) {
@@ -35,6 +43,9 @@ export default function Settings() {
                 }
                 if (zoneRes.data?.value !== null && zoneRes.data?.value !== undefined) {
                     setZones(zoneRes.data.value);
+                }
+                if (orderBookingRes.data) {
+                    setOrderBooking(orderBookingRes.data);
                 }
             } catch (error) {
                 console.error("Error loading settings:", error);
@@ -227,3 +238,4 @@ export default function Settings() {
         </div>
     );
 }
+
