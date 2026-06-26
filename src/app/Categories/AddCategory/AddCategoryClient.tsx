@@ -30,10 +30,33 @@ export default function AddCategory() {
         categoryStatus: "active",
         categoryImage: null,
         imageUrl: "",
+        subCategories: [] as string[],
     });
 
+    const [newSubCategory, setNewSubCategory] = useState("");
     const [image, setImage] = useState<any>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+    const handleAddSubCategory = () => {
+        if (!newSubCategory.trim()) return;
+        const normalized = newSubCategory.trim().toUpperCase();
+        if (formData.subCategories?.includes(normalized)) {
+            showToast("Subcategory already exists.", "error");
+            return;
+        }
+        setFormData((prev: any) => ({
+            ...prev,
+            subCategories: [...(prev.subCategories || []), normalized]
+        }));
+        setNewSubCategory("");
+    };
+
+    const handleRemoveSubCategory = (sub: string) => {
+        setFormData((prev: any) => ({
+            ...prev,
+            subCategories: (prev.subCategories || []).filter((s: string) => s !== sub)
+        }));
+    };
 
     useEffect(() => {
         if (id) {
@@ -59,6 +82,7 @@ export default function AddCategory() {
                     categoryStatus: category.categoryStatus || "active",
                     categoryImage: null,
                     imageUrl: category.categoryImage?.url || "",
+                    subCategories: category.subCategories || [],
                 });
                 if (category.categoryImage?.url) {
                     setImage({
@@ -114,6 +138,7 @@ export default function AddCategory() {
         data.append("categoryName", formData.categoryName);
         data.append("categoryDescription", formData.categoryDescription);
         data.append("categoryStatus", formData.categoryStatus);
+        data.append("subCategories", JSON.stringify(formData.subCategories || []));
         if (formData.categoryImage) {
             data.append("image", formData.categoryImage);
         }
@@ -304,6 +329,56 @@ export default function AddCategory() {
                                         disabled={isViewMode}
                                         rows={4}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Subcategories</label>
+                                    <div className="flex gap-2 mb-3">
+                                        <input
+                                            type="text"
+                                            className="flex-1 p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors font-mono uppercase font-bold text-black"
+                                            placeholder="e.g. Fresh Fruits"
+                                            value={newSubCategory}
+                                            onChange={(e) => setNewSubCategory(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleAddSubCategory();
+                                                }
+                                            }}
+                                            disabled={isViewMode}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddSubCategory}
+                                            disabled={isViewMode}
+                                            className="px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold uppercase transition-colors"
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.subCategories?.map((sub: string, index: number) => (
+                                            <div
+                                                key={index}
+                                                className="flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-3 py-1 text-xs font-mono font-bold uppercase text-gray-700"
+                                            >
+                                                <span>{sub}</span>
+                                                {!isViewMode && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveSubCategory(sub)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <XMarkIcon className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {(!formData.subCategories || formData.subCategories.length === 0) && (
+                                            <p className="text-xs text-gray-400 font-mono">No subcategories added yet.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

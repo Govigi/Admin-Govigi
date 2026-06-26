@@ -5,47 +5,58 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 
-export default function Breadcrumbs() {
+export interface BreadcrumbItem {
+    label: string;
+    href?: string;
+}
+
+interface BreadcrumbsProps {
+    items?: BreadcrumbItem[];
+}
+
+export default function Breadcrumbs({ items }: BreadcrumbsProps) {
     const pathname = usePathname();
 
-    // Remove trailing headers, split by /
-    const segments = pathname.split("/").filter((item) => item !== "");
+    const breadcrumbItems: BreadcrumbItem[] = React.useMemo(() => {
+        if (items) return items;
 
-    const formatSegment = (segment: string) => {
-        // Replace hyphens with spaces
-        // Remove query params if any (though usePathname usually gives path only)
-        return segment.replace(/-/g, " ").toUpperCase();
-    };
+        const segments = pathname.split("/").filter((item) => item !== "");
+        const mapped: BreadcrumbItem[] = [
+            { label: "HOME", href: "/" }
+        ];
+
+        segments.forEach((segment, index) => {
+            const href = `/${segments.slice(0, index + 1).join("/")}`;
+            mapped.push({
+                label: segment.replace(/-/g, " ").toUpperCase(),
+                href: index === segments.length - 1 ? undefined : href,
+            });
+        });
+
+        return mapped;
+    }, [items, pathname]);
 
     return (
-        <nav className="flex items-center text-xs font-mono tracking-widest uppercase" aria-label="Breadcrumb">
-            <ol className="inline-flex items-center space-x-2">
-                <li className="inline-flex items-center">
-                    <Link
-                        href="/"
-                        className="text-gray-400 hover:text-black transition-colors"
-                    >
-                        HOME
-                    </Link>
-                </li>
-                {segments.map((segment, index) => {
-                    // Build the path up to this segment
-                    const path = `/${segments.slice(0, index + 1).join("/")}`;
-                    const isLast = index === segments.length - 1;
+        <nav className="flex items-center text-[10px] font-bold tracking-wider uppercase font-sans text-gray-400" aria-label="Breadcrumb">
+            <ol className="inline-flex items-center">
+                {breadcrumbItems.map((item, index) => {
+                    const isLast = index === breadcrumbItems.length - 1;
 
                     return (
-                        <li key={path} className="inline-flex items-center">
-                            <span className="mx-2 text-gray-300">/</span>
-                            {isLast ? (
-                                <span className="text-black font-bold">
-                                    {formatSegment(segment)}
+                        <li key={index} className="inline-flex items-center">
+                            {index > 0 && (
+                                <ChevronRightIcon className="mx-2 h-2.5 w-2.5 text-gray-300 stroke-[3.5]" />
+                            )}
+                            {isLast || !item.href ? (
+                                <span className={isLast ? "text-[#10b981] font-bold" : "text-gray-900"}>
+                                    {item.label}
                                 </span>
                             ) : (
                                 <Link
-                                    href={path}
+                                    href={item.href}
                                     className="text-gray-400 hover:text-black transition-colors"
                                 >
-                                    {formatSegment(segment)}
+                                    {item.label}
                                 </Link>
                             )}
                         </li>

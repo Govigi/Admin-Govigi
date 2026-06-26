@@ -14,22 +14,22 @@ import { useSidePanel } from "../../libs/Hooks/sidePanelContext";
 const columns = [
   {
     name: "Product",
-    selector: (row) => row.name,
+    selector: (row: any) => row.name,
     sortable: true,
   },
   {
     name: "Category",
-    selector: (row) => row.category,
+    selector: (row: any) => typeof row.category === "object" ? row.category?.categoryName || row.category?.name || "" : row.category,
     sortable: true,
   },
   {
     name: "Stock",
-    selector: (row) => row.stock,
+    selector: (row: any) => row.stock,
     sortable: true,
   },
   {
     name: "Image",
-    selector: (row) => (
+    selector: (row: any) => (
       <img
         src={row.image?.url}
         alt={row.name}
@@ -39,16 +39,16 @@ const columns = [
   },
   {
     name: "Actions",
-    cell: (row) => <ActionsMenu row={row} />,
+    cell: (row: any) => <ActionsMenu row={row} />,
     ignoreRowClick: true,
   },
 ];
-function ActionsMenu({ row }) {
+function ActionsMenu({ row }: { row: any }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
-  const iconRef = useRef(null);
-  const dropdownRef = useRef(null);
-  const { openSidePanel } = useSidePanel();
+  const iconRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { openSidePanel } = useSidePanel() as any;
 
   useEffect(() => {
     if (open && iconRef.current) {
@@ -61,8 +61,8 @@ function ActionsMenu({ row }) {
   }, [open]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      const target = event.target;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
         (iconRef.current && iconRef.current.contains(target)) ||
         (dropdownRef.current && dropdownRef.current.contains(target))
@@ -75,7 +75,7 @@ function ActionsMenu({ row }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  function tryOpenSidePanel(rowData) {
+  function tryOpenSidePanel(rowData: any) {
     try {
       openSidePanel(rowData);
     } catch (e) {
@@ -128,19 +128,19 @@ function ActionsMenu({ row }) {
   );
 }
 
-export default function StockTable({ products }) {
+export default function StockTable({ products }: { products: any[] }) {
   const [filteredProducts, setFilteredProducts] = useState(products);
 
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const results = products.filter((product) =>
+    const results = products.filter((product: any) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProducts(results);
   }, [searchTerm, products]);
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 

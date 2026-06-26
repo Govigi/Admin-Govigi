@@ -17,7 +17,49 @@ export const getVendorById = async (id: string) => {
 };
 
 export const createVendor = async (data: any) => {
-    const response = await axios.post(VendorUrl.createVendor, data, getAuthHeader());
+    const formData = new FormData();
+
+    if (data.image instanceof File) {
+        formData.append("image", data.image);
+    }
+    if (data.document instanceof File) {
+        formData.append("document", data.document);
+    }
+    if (data.profileImage instanceof File) {
+        formData.append("profileImage", data.profileImage);
+    }
+
+    if (Array.isArray(data.storeImages)) {
+        data.storeImages.forEach((file: any) => {
+            if (file instanceof File) {
+                formData.append("storeImages", file);
+            }
+        });
+    }
+
+    Object.keys(data).forEach((key) => {
+        if (["image", "document", "profileImage", "storeImages"].includes(key)) {
+            return;
+        }
+
+        const value = data[key];
+
+        if (typeof value === "object" && value !== null) {
+            formData.append(key, JSON.stringify(value));
+        } else if (value !== undefined && value !== null) {
+            formData.append(key, value);
+        }
+    });
+
+    const config = {
+        ...getAuthHeader(),
+    };
+
+    if (config.headers) {
+        delete (config.headers as Record<string, string>)["Content-Type"];
+    }
+
+    const response = await axios.post(VendorUrl.createVendor, formData, config);
     return response.data;
 };
 

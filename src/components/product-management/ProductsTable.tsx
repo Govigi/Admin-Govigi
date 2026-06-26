@@ -111,14 +111,23 @@ export default function ProductsTable({
       },
       {
         name: "Category",
-        selector: (row: any) => row.category,
+        selector: (row: any) => typeof row.category === "object" ? row.category?.categoryName || row.category?.name || "" : row.category,
         sortable: true,
         cell: (row: any) => (
-          <span className="px-2.5 py-0.5 bg-emerald-50 text-[#10b981] text-[9px] font-mono font-extrabold border border-emerald-200 rounded uppercase tracking-widest">
-            {typeof row.category === "object"
-              ? row.category.categoryName || row.category.name || row.category._id || "General"
-              : row.category || "General"}
-          </span>
+          <div className="flex flex-col items-start py-1">
+            <span className="px-2.5 py-0.5 bg-emerald-50 text-[#10b981] text-[9px] font-mono font-extrabold border border-emerald-200 rounded uppercase tracking-widest">
+              {typeof row.category === "object"
+                ? row.category.categoryName || row.category.name || row.category._id || "General"
+                : row.category || "General"}
+            </span>
+            {row.subCategory && (
+              <span className="text-[9px] font-mono font-bold text-gray-400 uppercase mt-1 tracking-tighter">
+                {typeof row.subCategory === "object"
+                  ? row.subCategory.subCategoryName || row.subCategory.name || ""
+                  : row.subCategory}
+              </span>
+            )}
+          </div>
         ),
       },
       {

@@ -22,7 +22,7 @@ export default function Dashboard() {
     const [drivers, setDrivers] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const { isSidebarCollapsed } = useUI();
+    const [timeframe, setTimeframe] = useState<"today" | "7days" | "month" | "6months" | "year" | "all">("today");
 
     useEffect(() => {
         fetchAllData();
@@ -79,7 +79,7 @@ export default function Dashboard() {
 
     if (loading) {
         return (
-            <div className="flex h-full items-center justify-center bg-white font-mono">
+            <div className="flex h-full items-center justify-center bg-white font-sans min-h-screen">
                 <div className="text-sm animate-pulse tracking-widest text-gray-400">LOADING DATA...</div>
             </div>
         );
@@ -88,20 +88,43 @@ export default function Dashboard() {
     const lowStockProducts = products.filter(p => (p.currentStock || p.stock || 0) < 10);
 
     return (
-        <div className="min-h-screen bg-white p-4 md:p-8 font-mono text-gray-900">
-            {/* Header */}
-            <div className="mb-8 border-b border-gray-200 pb-4">
-                <h1 className="text-xl font-bold uppercase tracking-widest text-gray-950">Dashboard Overview</h1>
-                <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">
-                    Real-time Operational Metrics & Performance
-                </p>
+        <div className="min-h-screen bg-white p-4 md:p-8 font-sans text-gray-900 flex flex-col gap-6">
+            
+            {/* Top Title Bar with Global Timeframe Pill Selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                <h1 className="text-xl font-black text-gray-950 uppercase tracking-wider">Dashboard</h1>
+                
+                {/* Pill Tab Selector */}
+                <div className="inline-flex items-center p-0.5 border border-gray-200/80 rounded-full bg-white shadow-sm self-start sm:self-auto">
+                    {[
+                        { id: "today", label: "Today" },
+                        { id: "7days", label: "7D" },
+                        { id: "month", label: "30D" },
+                        { id: "6months", label: "6M" },
+                        { id: "year", label: "YTD" },
+                        { id: "all", label: "All" }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setTimeframe(tab.id as any)}
+                            className={`px-4 py-1 text-[10px] font-bold tracking-wider rounded-full transition-all duration-200 uppercase ${
+                                timeframe === tab.id
+                                    ? "bg-[#1c1917] text-white shadow"
+                                    : "text-gray-400 hover:text-gray-800"
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Top Stats - Industrial Style */}
+            {/* Top Stats - Responsive Dynamic Industrial KPIs */}
             <IndustrialKPIs 
                 orders={orders} 
-                customersCount={customers.length} 
-                driversCount={drivers.length} 
+                customers={customers} 
+                drivers={drivers} 
+                timeframe={timeframe}
             />
 
             {/* Main Content Grid */}
@@ -109,11 +132,8 @@ export default function Dashboard() {
                 
                 {/* Left Section - Chart & Feed */}
                 <div className="lg:col-span-8 space-y-6">
-                    <div className="border border-gray-200 rounded-lg p-4 bg-white min-h-[400px]">
-                        <div className="mb-4">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Order Trends</h3>
-                        </div>
-                        <DashboardChart orders={orders} />
+                    <div className="border border-gray-200 rounded-lg p-5 bg-white min-h-[400px] flex flex-col justify-between">
+                        <DashboardChart orders={orders} timeframe={timeframe} />
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

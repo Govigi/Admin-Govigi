@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowUpTrayIcon, XMarkIcon, TrashIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { ArrowUpTrayIcon, XMarkIcon, TrashIcon, PhotoIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { useUI } from "@/src/libs/Hooks/UIContext";
 import axios from "axios";
 
@@ -26,6 +26,9 @@ export default function BannerPage() {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [newImage, setNewImage] = useState<{ file: File, preview: string } | null>(null);
+    const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
+    const [categoryList, setCategoryList] = useState<any[]>([]);
+    const [subCategoryList, setSubCategoryList] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
         altText: "",
@@ -52,8 +55,36 @@ export default function BannerPage() {
         }
     };
 
+    const fetchCategoryList = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/getAllCategories`);
+            let data = [];
+            if (Array.isArray(response.data)) {
+                data = response.data;
+            } else if (response.data.categories && Array.isArray(response.data.categories)) {
+                data = response.data.categories;
+            } else if (response.data.data && Array.isArray(response.data.data)) {
+                data = response.data.data;
+            }
+            setCategoryList(data);
+        } catch (error) {
+            console.error("Failed to load categories:", error);
+        }
+    };
+
+    const fetchSubCategoryList = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/getAllSubCategories`);
+            setSubCategoryList(response.data || []);
+        } catch (error) {
+            console.error("Failed to load subcategories:", error);
+        }
+    };
+
     useEffect(() => {
         fetchBanners();
+        fetchCategoryList();
+        fetchSubCategoryList();
     }, []);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,12 +108,41 @@ export default function BannerPage() {
         }
     };
 
-    const handleUpload = async () => {
-        if (!newImage) return;
+    const handleEditClick = (banner: Banner) => {
+        setEditingBannerId(banner._id);
+        setFormData({
+            altText: banner.altText || "",
+            link: banner.link || "",
+            type: banner.type || "",
+            weight: String(banner.weight || "0"),
+            startDate: banner.startDate ? banner.startDate.split('T')[0] : "",
+            endDate: banner.endDate ? banner.endDate.split('T')[0] : "",
+            isActive: banner.isActive
+        });
+        setNewImage(null);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingBannerId(null);
+        setNewImage(null);
+        setFormData({
+            altText: "",
+            link: "",
+            type: "",
+            weight: "0",
+            startDate: "",
+            endDate: "",
+            isActive: true
+        });
+    };
+
+    const handleSave = async () => {
         setUploading(true);
 
         const data = new FormData();
-        data.append("image", newImage.file);
+        if (newImage) {
+            data.append("image", newImage.file);
+        }
         data.append("altText", formData.altText);
         data.append("link", formData.link);
         data.append("type", formData.type);
@@ -92,27 +152,41 @@ export default function BannerPage() {
         data.append("isActive", String(formData.isActive));
 
         try {
-            await axios.post(`${API_URL}/banners`, data, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
+            if (editingBannerId) {
+                await axios.patch(`${API_URL}/banners/${editingBannerId}`, data, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    }
+                });
+                showToast("Banner updated successfully", "success");
+                handleCancelEdit();
+            } else {
+                if (!newImage) {
+                    showToast("Please select an image first", "error");
+                    setUploading(false);
+                    return;
                 }
-            });
-
-            showToast("Banner published successfully", "success");
-            setNewImage(null);
-            setFormData({
-                altText: "",
-                link: "",
-                type: "",
-                weight: "0",
-                startDate: "",
-                endDate: "",
-                isActive: true
-            });
+                await axios.post(`${API_URL}/banners`, data, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    }
+                });
+                showToast("Banner published successfully", "success");
+                setNewImage(null);
+                setFormData({
+                    altText: "",
+                    link: "",
+                    type: "",
+                    weight: "0",
+                    startDate: "",
+                    endDate: "",
+                    isActive: true
+                });
+            }
             fetchBanners();
         } catch (error: any) {
-            console.error('Error uploading banner:', error);
-            showToast(error.response?.data?.message || "Failed to upload banner", "error");
+            console.error('Error saving banner:', error);
+            showToast(error.response?.data?.message || "Failed to save banner", "error");
         } finally {
             setUploading(false);
         }
@@ -159,14 +233,14 @@ export default function BannerPage() {
                         <div className="bg-white border border-gray-200 p-6 sticky top-8 rounded-none shadow-sm">
                             <h2 className="text-sm font-bold uppercase mb-6 flex items-center gap-2 text-[#059669]">
                                 <ArrowUpTrayIcon className="w-4 h-4" />
-                                Banner Configuration
+                                {editingBannerId ? "Edit Banner Configuration" : "Banner Configuration"}
                             </h2>
 
                             <div
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={handleDrop}
                                 className={`border-2 border-dashed transition-all duration-200 aspect-video flex flex-col items-center justify-center p-4 text-center cursor-pointer relative overflow-hidden group mb-6
-                                    ${newImage ? 'border-[#10b981] bg-emerald-50' : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'}`}
+                                    ${newImage || (editingBannerId && banners.find(b => b._id === editingBannerId)?.bannerImage.url) ? 'border-[#10b981] bg-emerald-50' : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'}`}
                             >
                                 {newImage ? (
                                     <>
@@ -180,6 +254,14 @@ export default function BannerPage() {
                                             </button>
                                             <span className="text-xs font-bold text-black bg-white/80 px-2 py-1 rounded">Change Image</span>
                                         </div>
+                                    </>
+                                ) : editingBannerId && banners.find(b => b._id === editingBannerId) ? (
+                                    <>
+                                        <img src={banners.find(b => b._id === editingBannerId)?.bannerImage.url} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                        <label className="relative z-10 flex flex-col items-center justify-center cursor-pointer w-full h-full">
+                                            <span className="text-xs font-bold text-black bg-white/80 px-2 py-1 rounded">Change Image</span>
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageSelect} />
+                                        </label>
                                     </>
                                 ) : (
                                     <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
@@ -203,14 +285,124 @@ export default function BannerPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Deep Link / URL</label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors"
-                                        placeholder="e.g. /category/fruits or https://..."
-                                        value={formData.link}
-                                        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                                    />
+                                    <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Link Target Type</label>
+                                    <select
+                                        className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white mb-2"
+                                        value={formData.link.startsWith("/category-products") ? "category" : "custom"}
+                                        onChange={(e) => {
+                                            if (e.target.value === "custom") {
+                                                setFormData({ ...formData, link: "" });
+                                            } else {
+                                                if (categoryList.length > 0) {
+                                                    const cat = categoryList[0];
+                                                    setFormData({
+                                                        ...formData,
+                                                        link: `/category-products?categoryId=${cat._id}&categoryName=${cat.categoryName}`
+                                                    });
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <option value="custom">Custom Link / URL</option>
+                                        <option value="category">Category Page</option>
+                                    </select>
+
+                                    {(formData.link.startsWith("/category-products") || (formData.link === "" && categoryList.length > 0)) && (
+                                        <>
+                                            <div className="mb-2">
+                                                <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Select Category</label>
+                                                <select
+                                                    className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white"
+                                                    value={
+                                                        (() => {
+                                                            const match = formData.link.match(/categoryId=([^&]+)/);
+                                                            return match ? match[1] : "";
+                                                        })()
+                                                    }
+                                                    onChange={(e) => {
+                                                        const selectedId = e.target.value;
+                                                        const cat = categoryList.find(c => c._id === selectedId);
+                                                        if (cat) {
+                                                            setFormData({
+                                                                ...formData,
+                                                                link: `/category-products?categoryId=${cat._id}&categoryName=${cat.categoryName}`
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="">-- Choose Category --</option>
+                                                    {categoryList.map((cat) => (
+                                                        <option key={cat._id} value={cat._id}>
+                                                            {cat.categoryName}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {(() => {
+                                                const catIdMatch = formData.link.match(/categoryId=([^&]+)/);
+                                                const currentCatId = catIdMatch ? catIdMatch[1] : "";
+                                                const filteredSubCats = subCategoryList.filter(sub => {
+                                                    const subCatId = typeof sub.category === 'object' ? sub.category?._id : sub.category;
+                                                    return subCatId === currentCatId;
+                                                });
+
+                                                if (currentCatId && filteredSubCats.length > 0) {
+                                                    return (
+                                                        <div className="mb-2">
+                                                            <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Select Subcategory (Optional)</label>
+                                                            <select
+                                                                className="w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors bg-white"
+                                                                value={
+                                                                    (() => {
+                                                                        const match = formData.link.match(/subCategoryId=([^&]+)/);
+                                                                        return match ? match[1] : "";
+                                                                    })()
+                                                                }
+                                                                onChange={(e) => {
+                                                                    const subId = e.target.value;
+                                                                    const cat = categoryList.find(c => c._id === currentCatId);
+                                                                    if (cat) {
+                                                                        if (subId) {
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                link: `/category-products?categoryId=${cat._id}&categoryName=${cat.categoryName}&subCategoryId=${subId}`
+                                                                            });
+                                                                        } else {
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                link: `/category-products?categoryId=${cat._id}&categoryName=${cat.categoryName}`
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <option value="">All Subcategories</option>
+                                                                {filteredSubCats.map((sub) => (
+                                                                    <option key={sub._id} value={sub._id}>
+                                                                        {sub.subCategoryName}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </>
+                                    )}
+
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Deep Link / URL Value</label>
+                                        <input
+                                            type="text"
+                                            className={`w-full p-2 text-xs border border-gray-200 focus:border-[#10b981] outline-none transition-colors ${formData.link.startsWith("/category-products") ? "bg-gray-50 text-gray-500" : "bg-white text-black"}`}
+                                            placeholder="e.g. /category/fruits or https://..."
+                                            value={formData.link}
+                                            onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                                            readOnly={formData.link.startsWith("/category-products")}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -269,12 +461,22 @@ export default function BannerPage() {
                             </div>
 
                             <button
-                                onClick={handleUpload}
-                                disabled={!newImage || uploading}
+                                onClick={handleSave}
+                                disabled={(!editingBannerId && !newImage) || uploading}
                                 className="w-full mt-6 bg-black text-white py-3 text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {uploading ? "Uploading to Cloudinary..." : "Publish Banner"}
+                                {uploading ? "Saving Banner..." : editingBannerId ? "Save Changes" : "Publish Banner"}
                             </button>
+
+                            {editingBannerId && (
+                                <button
+                                    onClick={handleCancelEdit}
+                                    disabled={uploading}
+                                    className="w-full mt-2 bg-gray-200 text-black py-3 text-xs font-bold uppercase tracking-wider hover:bg-gray-300 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -307,6 +509,13 @@ export default function BannerPage() {
                                                     className="bg-white text-black px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#10b981] hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300"
                                                 >
                                                     {banner.isActive ? 'Deactivate' : 'Activate'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEditClick(banner)}
+                                                    className="bg-white text-black p-2 rounded-full hover:bg-amber-500 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300"
+                                                    title="Edit Banner"
+                                                >
+                                                    <PencilIcon className="w-5 h-5" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(banner._id)}

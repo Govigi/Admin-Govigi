@@ -1,15 +1,13 @@
 "use client";
 import DataTable from "react-data-table-component";
 import {
-  ArrowDownIcon,
   EllipsisHorizontalIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useUI } from "@/src/libs/Hooks/UIContext";
-import { CategoryManagementUrl } from "@/src/libs/utils/API/endpoints";
-
+import { SubCategoryManagementUrl } from "@/src/libs/utils/API/endpoints";
 
 const customStyles = {
   table: {
@@ -69,7 +67,7 @@ const customStyles = {
 
 const getColumns = (onRefresh: () => void) => [
   {
-    name: "Category",
+    name: "Subcategory",
     selector: (row: any) => row.name,
     sortable: true,
     cell: (row: any) => (
@@ -84,21 +82,20 @@ const getColumns = (onRefresh: () => void) => [
     width: "300px",
   },
   {
-    name: "Subcategories",
-    cell: (row: any) => (
-      <div className="flex flex-wrap gap-1 max-w-[300px] py-1">
-        {row.subCategories && row.subCategories.length > 0 ? (
-          row.subCategories.map((sub: string, index: number) => (
-            <span key={index} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 border border-gray-200 text-[9px] font-mono font-bold rounded uppercase">
-              {sub}
-            </span>
-          ))
-        ) : (
-          <span className="text-[10px] text-gray-400 font-mono">None</span>
-        )}
-      </div>
-    ),
-    width: "320px",
+    name: "Parent Category",
+    selector: (row: any) => typeof row.category === 'object' ? row.category?.categoryName || row.category?.name : row.category,
+    sortable: true,
+    cell: (row: any) => {
+      const parentName = typeof row.category === 'object'
+        ? row.category?.categoryName || row.category?.name || "General"
+        : row.category || "General";
+      return (
+        <span className="px-2.5 py-0.5 bg-emerald-55 text-[#10b981] text-[9px] font-mono font-extrabold border border-emerald-250 rounded uppercase tracking-widest">
+          {parentName}
+        </span>
+      );
+    },
+    width: "220px",
   },
   {
     name: "Status",
@@ -156,30 +153,27 @@ function ActionsMenu({ row, onRefresh }: { row: any, onRefresh: () => void }) {
   }, [open]);
 
   const handleEdit = () => {
-    sessionStorage.setItem("editCategoryData", JSON.stringify(row));
-    router.push(`/Categories/AddCategory?id=${row.id}&mode=edit`);
+    sessionStorage.setItem("editSubCategoryData", JSON.stringify(row));
+    router.push(`/Subcategories/AddSubcategory?id=${row.id}&mode=edit`);
     setOpen(false);
   };
 
   const handleDelete = () => {
     showModal(
-      "Delete Category",
-      "Are you sure you want to delete this category? This action cannot be undone.",
+      "Delete Subcategory",
+      "Are you sure you want to delete this subcategory? This action cannot be undone.",
       "delete",
       () => {
-        // Add delete logic here
-        console.log("Deleted:", row.id);
-        deleteCategory(row.id);
+        deleteSubCategory(row.id);
       }
     );
     setOpen(false);
   };
 
-  const deleteCategory = async (catId: string) => {
+  const deleteSubCategory = async (subCatId: string) => {
     try {
-
       const res = await fetch(
-        `${CategoryManagementUrl.deleteCategory}/${catId}`,
+        `${SubCategoryManagementUrl.deleteSubCategory}/${subCatId}`,
         {
           method: "DELETE",
         }
@@ -188,18 +182,17 @@ function ActionsMenu({ row, onRefresh }: { row: any, onRefresh: () => void }) {
       const json = await res.json();
 
       if (!res.ok) {
-        throw new Error(json.message || "Failed to delete category");
+        throw new Error(json.message || "Failed to delete subcategory");
       }
 
-      showToast("Category deleted successfully.", "success");
+      showToast("Subcategory deleted successfully.", "success");
       if (onRefresh) onRefresh();
 
     } catch (err: any) {
-      console.error("Error deleting category:", err);
-      showToast(err.message || "Failed to delete category.", "error");
+      console.error("Error deleting subcategory:", err);
+      showToast(err.message || "Failed to delete subcategory.", "error");
     }
   };
-
 
   const Dropdown = (
     <div
@@ -236,22 +229,23 @@ function ActionsMenu({ row, onRefresh }: { row: any, onRefresh: () => void }) {
   );
 }
 
-export default function CategoriesTable({ categories, onRefresh }: { categories: any[], onRefresh: () => void }) {
+export default function SubcategoriesTable({ subcategories, onRefresh }: { subcategories: any[], onRefresh: () => void }) {
   const columns = React.useMemo(() => getColumns(onRefresh), [onRefresh]);
+  const router = useRouter();
 
   return (
     <div className="border border-gray-200">
       <DataTable
         columns={columns}
-        data={categories}
+        data={subcategories}
         pagination
         highlightOnHover
         pointerOnHover
         responsive
         paginationPerPage={10}
         customStyles={customStyles}
+        onRowClicked={(row) => router.push(`/Subcategories/AddSubcategory?id=${row.id}&mode=edit`)}
       />
     </div>
   );
 }
-
