@@ -12,7 +12,7 @@ import GlobalLoader from "../components/Global/GlobalLoader";
 import { LoadingProvider } from "@/src/libs/Hooks/LoadingContext";
 import { UIProvider, useUI } from "@/src/libs/Hooks/UIContext";
 import GlobalModal from "../components/Global/GlobalModal";
-import { GooeyToaster } from "goey-toast";
+import { GooeyToaster, gooeyToast } from "goey-toast";
 import "goey-toast/styles.css";
 
 const inter = Inter({
@@ -44,18 +44,92 @@ const isTokenValid = (token: string | null): boolean => {
     }
 };
 
+// ponytail: Decode role and permissions from JWT payload
+const getRoleDetails = (token: string | null) => {
+    if (!token) return { role: "", permissions: [] };
+    try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return { role: "", permissions: [] };
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(window.atob(base64));
+        return {
+            role: decoded.role || "",
+            permissions: decoded.permissions || []
+        };
+    } catch (e) {
+        return { role: "", permissions: [] };
+    }
+};
+
+// ponytail: Map route prefixes to module keys and verify 'read' action
+const hasPermissionForPath = (pathname: string, role: string, permissions: string[]): boolean => {
+    if (role === 'superadmin') return true;
+    if (pathname === '/login' || pathname === '/login/') return true;
+
+    const path = pathname.toLowerCase();
+    let module = "";
+
+    if (path.startsWith("/dashboard")) module = "dashboard";
+    else if (path.startsWith("/ordersummary") || path.startsWith("/order-assignment") || path.startsWith("/orders")) module = "orders";
+    else if (path.startsWith("/product-management") || path.startsWith("/categories") || path.startsWith("/subcategories") || path.startsWith("/product-requests")) module = "products";
+    else if (path.startsWith("/vendors") || path.startsWith("/vendor-requests")) module = "vendors";
+    else if (path.startsWith("/customers-dashboard")) module = "users";
+    else if (path.startsWith("/drivers")) module = "drivers";
+    else if (path.startsWith("/scheduling") || path.startsWith("/geofencing")) module = "operations";
+    else if (path.startsWith("/finance")) module = "payments";
+    else if (path.startsWith("/marketing")) module = "marketing";
+    else if (path.startsWith("/media")) module = "media";
+    else if (path.startsWith("/settings")) module = "settings";
+
+    if (!module) return true; // fallback for unmapped custom screens
+
+    return permissions.includes(`${module}:read`);
+};
+
+// ponytail: Resolve default route safely based on granted permissions to prevent redirect loops
+const getDefaultPathForUser = (role: string, permissions: string[]): string => {
+    if (role === 'superadmin' || permissions.includes('orders:read')) return "/Ordersummary";
+    
+    if (permissions.includes('dashboard:read')) return "/Dashboard";
+    if (permissions.includes('vendors:read')) return "/vendors";
+    if (permissions.includes('products:read')) return "/product-management";
+    if (permissions.includes('users:read')) return "/customers-dashboard";
+    if (permissions.includes('drivers:read')) return "/drivers";
+    if (permissions.includes('operations:read')) return "/scheduling";
+    if (permissions.includes('payments:read')) return "/finance/payments";
+    if (permissions.includes('marketing:read')) return "/marketing/banners";
+    if (permissions.includes('media:read')) return "/media/gallery";
+    if (permissions.includes('reports:read')) return "/Ordersummary/stockReport";
+    if (permissions.includes('settings:read')) return "/settings";
+    
+    return "/login"; // logout fallback
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
     const [showLayout, setShowLayout] = useState(true);
 
-    // 1. Axios 401 Interceptor & Periodic Expiry Check
+    // 1. Axios 401 & Request Interceptor + Periodic Expiry Check
     useEffect(() => {
         setIsClient(true);
 
+        // Global Axios interceptor to add authorization header
+        const reqInterceptor = axios.interceptors.request.use(
+            (config) => {
+                const token = localStorage.getItem("admin_token");
+                if (token) {
+                    config.headers = config.headers || {};
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+                return config;
+            },
+            (error) => Promise.reject(error)
+        );
+
         // Global Axios interceptor to catch backend 401 responses
-        const interceptor = axios.interceptors.response.use(
+        const resInterceptor = axios.interceptors.response.use(
             (response) => response,
             (error) => {
                 if (error.response && error.response.status === 401) {
@@ -76,12 +150,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }, 600000);
 
         return () => {
-            axios.interceptors.response.eject(interceptor);
+            axios.interceptors.request.eject(reqInterceptor);
+            axios.interceptors.response.eject(resInterceptor);
             clearInterval(interval);
         };
     }, [router]);
 
-    // 2. Navigation & Page Load Expiry Check
+    // 2. Navigation & Page Load Expiry Check & RBAC Guard
     useEffect(() => {
         if (!isClient) return;
 
@@ -95,9 +170,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         if (!hasValidToken && pathname !== "/login") {
             setShowLayout(false);
             router.push("/login");
-        } else if (hasValidToken && pathname === "/login") {
-            setShowLayout(false);
-            router.push("/Ordersummary");
+        } else if (hasValidToken) {
+            const { role, permissions } = getRoleDetails(token);
+            
+            if (pathname === "/login") {
+                setShowLayout(false);
+                router.push(getDefaultPathForUser(role, permissions));
+            } else if (!hasPermissionForPath(pathname, role, permissions)) {
+                gooeyToast.error("Access Denied: You do not have permission to view this page.");
+                router.push(getDefaultPathForUser(role, permissions));
+            } else {
+                setShowLayout(true);
+            }
         } else {
             setShowLayout(true);
         }
