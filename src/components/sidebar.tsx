@@ -116,8 +116,9 @@ const navItems: NavItem[] = [
     icon: Cog6ToothIcon,
     subItems: [
       { name: "General Settings", path: "/settings" },
+      { name: "Order Settings", path: "/settings/orders" },
       { name: "Payment Settings", path: "/settings/payment" },
-      { name: "Delivery Settings", path: "/settings/delivery"},
+      { name: "Roles & Admins", path: "/settings/roles" },
     ],
   },
 ];
@@ -129,16 +130,68 @@ export default function Sidebar() {
   
   // Track which submenus are open
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [filteredItems, setFilteredItems] = useState<NavItem[]>([]);
+
+  // ponytail: filter navigation based on role/permissions stored in JWT
+  useEffect(() => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return;
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = JSON.parse(window.atob(base64));
+      const role = decoded.role || "";
+      const permissions = decoded.permissions || [];
+
+      if (role === 'superadmin') {
+        setFilteredItems(navItems);
+        return;
+      }
+
+      const filtered = navItems
+        .filter(item => {
+          const module = item.name === "Dashboard" ? "dashboard" :
+                         item.name === "Orders" ? "orders" :
+                         item.name === "Products" ? "products" :
+                         item.name === "Vendors" ? "vendors" :
+                         item.name === "Users" ? "users" :
+                         item.name === "Delivery Partners" ? "drivers" :
+                         item.name === "Operations" ? "operations" :
+                         item.name === "Payments" ? "payments" :
+                         item.name === "Marketing" ? "marketing" :
+                         item.name === "Media Gallery" ? "media" :
+                         item.name === "Reports" ? "reports" :
+                         item.name === "Settings" ? "settings" : "";
+
+          if (!module) return true;
+          return permissions.includes(`${module}:read`);
+        })
+        .map(item => {
+          if (item.name === "Settings" && item.subItems) {
+            return {
+              ...item,
+              subItems: item.subItems.filter(sub => sub.path !== "/settings/roles")
+            };
+          }
+          return item;
+        });
+
+      setFilteredItems(filtered);
+    } catch (e) {
+      setFilteredItems([]);
+    }
+  }, [pathname]);
 
   // Auto-expand menu if a child is active on page load
   useEffect(() => {
-    const activeParent = navItems.find(item => 
+    const activeParent = filteredItems.find(item => 
       item.subItems?.some(sub => pathname === sub.path || pathname.startsWith(`${sub.path}/`))
     );
     if (activeParent) {
       setOpenMenus(prev => ({ ...prev, [activeParent.name]: true }));
     }
-  }, [pathname]);
+  }, [pathname, filteredItems]);
 
   const toggleMenu = (name: string) => {
     setOpenMenus((prev) => ({
@@ -188,7 +241,7 @@ export default function Sidebar() {
         {/* NAVIGATION */}
         <nav className="flex-1 overflow-y-auto px-2 py-4 custom-scrollbar">
           <div className="space-y-1">
-            {navItems.map((item) => {
+            {filteredItems.map((item) => {
               const Icon = item.icon;
               const hasSubItems = item.subItems && item.subItems.length > 0;
               const isParentActive = isActive(item);
