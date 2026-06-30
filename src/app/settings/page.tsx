@@ -26,7 +26,7 @@ export default function Settings() {
             setLoading(true);
             try {
                 const [walletRes, zoneRes] = await Promise.all([
-                    axios.get(AdminUrl.updateSettings + "/wallet"),
+                    axios.get(AdminUrl.getSchedulingSettings.replace("/settings/scheduling", "/admin/settings/wallet")),
                     axios.get(AdminUrl.getSettings.replace("{key}", "delivery_zones"))
                 ]);
 
@@ -60,6 +60,8 @@ export default function Settings() {
             setSaving(false);
         }
     };
+
+
 
     const handleAddZone = () => {
         if (!newZone.name || !newZone.pincodes) return;
@@ -222,8 +224,11 @@ export default function Settings() {
                         </div>
                     </div>
 
+
+
                 </div>
             )}
         </div>
     );
 }
+

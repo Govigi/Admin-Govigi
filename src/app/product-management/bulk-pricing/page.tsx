@@ -103,7 +103,12 @@ export default function BulkPricingPage() {
 
     const fetchCategories = async () => {
         try {
-            const res = await fetch(CategoryManagementUrl.getAllCategories);
+            const token = typeof window !== 'undefined' ? localStorage.getItem("admin_token") : null;
+            const res = await fetch(CategoryManagementUrl.getAllCategories, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setCategories(Array.isArray(data) ? data : data.categories || []);
@@ -122,7 +127,12 @@ export default function BulkPricingPage() {
                 perPage: limit.toString(),
             });
 
-            const res = await fetch(`${OrderSummaryUrl.getAllProducts}?${queryParams.toString()}`);
+            const token = typeof window !== 'undefined' ? localStorage.getItem("admin_token") : null;
+            const res = await fetch(`${OrderSummaryUrl.getAllProducts}?${queryParams.toString()}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             if (!res.ok) throw new Error("Failed to fetch");
             const json = await res.json();
 
@@ -179,10 +189,12 @@ export default function BulkPricingPage() {
         fetchProducts(page, newPerPage);
     };
 
-    const handlePricingChange = (id: string, type: 'base' | 'commission', val: string, currentPrice: number) => {
+    const handlePricingChange = (id: string, type: 'base' | 'commission', val: string, row: any) => {
         if (val === "" || /^\d*\.?\d*$/.test(val)) {
             setPricingState(prev => {
-                const existing = prev[id] || { base: currentPrice.toString(), commission: "0" };
+                const defaultBase = row.vendorPrice !== undefined ? row.vendorPrice : row.pricePerKg;
+                const defaultComm = row.commissionPercentage !== undefined ? row.commissionPercentage : 0;
+                const existing = prev[id] || { base: defaultBase.toString(), commission: defaultComm.toString() };
                 return {
                     ...prev,
                     [id]: {
@@ -206,6 +218,7 @@ export default function BulkPricingPage() {
         }
 
         setIsSaving(true);
+        const token = typeof window !== 'undefined' ? localStorage.getItem("admin_token") : null;
         const updates = Object.entries(pricingState).map(([id, vals]) => {
             const base = Number(vals.base);
             const comm = Number(vals.commission);
@@ -213,8 +226,13 @@ export default function BulkPricingPage() {
 
             const formData = new FormData();
             formData.append("pricePerKg", finalPrice.toString());
+            formData.append("basePrice", base.toString());
+            formData.append("commissionPercentage", comm.toString());
             return fetch(`${OrderSummaryUrl.updateProduct}/${id}`, {
                 method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
                 body: formData
             });
         });
@@ -237,7 +255,7 @@ export default function BulkPricingPage() {
     const filteredProducts = useMemo(() => {
         return products.filter((p) => {
             const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchCat = categoryFilter === "all" || p.category === categoryFilter || p.category?.name === categoryFilter; // Handle populated vs string
+            const matchCat = categoryFilter === "all" || p.category === categoryFilter || p.category?.categoryName === categoryFilter || p.category?.name === categoryFilter; // Handle populated vs string
             return matchSearch && matchCat;
         });
     }, [products, searchQuery, categoryFilter]);
@@ -250,7 +268,11 @@ export default function BulkPricingPage() {
             cell: (row: any) => (
                 <div className="flex flex-col py-1">
                     <span className="font-bold uppercase text-xs">{row.name}</span>
-                    <span className="text-[10px] text-gray-400">{row.category}</span>
+                    <span className="text-[10px] text-gray-400">
+                        {row.category && typeof row.category === "object"
+                            ? row.category.categoryName || row.category.name || ""
+                            : row.category}
+                    </span>
                 </div>
             ),
             width: "250px"
@@ -267,14 +289,15 @@ export default function BulkPricingPage() {
             name: "Base Price",
             cell: (row: any) => {
                 const isEdited = pricingState[row._id] !== undefined;
-                const value = isEdited ? pricingState[row._id].base : row.pricePerKg;
+                const defaultValue = row.vendorPrice !== undefined ? row.vendorPrice : row.pricePerKg;
+                const value = isEdited ? pricingState[row._id].base : defaultValue;
 
                 return (
                     <input
                         type="text"
                         inputMode="decimal"
                         value={value}
-                        onChange={(e) => handlePricingChange(row._id, 'base', e.target.value, row.pricePerKg)}
+                        onChange={(e) => handlePricingChange(row._id, 'base', e.target.value, row)}
                         className={`w-20 py-2 px-2 text-sm font-bold font-mono border transition-all outline-none
                             ${isEdited
                                 ? 'bg-yellow-50 border-yellow-400 text-black'
@@ -290,14 +313,15 @@ export default function BulkPricingPage() {
             name: "+ Comm. (%)",
             cell: (row: any) => {
                 const isEdited = pricingState[row._id] !== undefined;
-                const value = isEdited ? pricingState[row._id].commission : "0";
+                const defaultValue = row.commissionPercentage !== undefined ? row.commissionPercentage : "0";
+                const value = isEdited ? pricingState[row._id].commission : defaultValue;
 
                 return (
                     <input
                         type="text"
                         inputMode="decimal"
                         value={value}
-                        onChange={(e) => handlePricingChange(row._id, 'commission', e.target.value, row.pricePerKg)}
+                        onChange={(e) => handlePricingChange(row._id, 'commission', e.target.value, row)}
                         className={`w-20 py-2 px-2 text-sm font-bold font-mono border transition-all outline-none
                             ${isEdited ? 'bg-blue-50 border-blue-400 text-black' : 'border-gray-200 focus:border-black focus:bg-gray-50'}`}
                         placeholder="0"
@@ -311,8 +335,10 @@ export default function BulkPricingPage() {
             cell: (row: any) => {
                 // Calculate
                 const state = pricingState[row._id];
-                const base = state ? Number(state.base) : row.pricePerKg;
-                const comm = state ? Number(state.commission) : 0;
+                const defaultBase = row.vendorPrice !== undefined ? row.vendorPrice : row.pricePerKg;
+                const defaultComm = row.commissionPercentage !== undefined ? row.commissionPercentage : 0;
+                const base = state ? Number(state.base) : defaultBase;
+                const comm = state ? Number(state.commission) : defaultComm;
                 // Handle NaN during typing
                 const final = isNaN(base) || isNaN(comm) ? "---" : (base + (base * (comm / 100)));
                 const isEdited = pricingState[row._id] !== undefined;

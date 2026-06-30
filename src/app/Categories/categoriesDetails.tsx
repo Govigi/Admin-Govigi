@@ -51,6 +51,7 @@ export default function CategoriesDetails() {
         description: item.categoryDescription,
         status: item.categoryStatus,
         image: item.categoryImage,
+        subCategories: item.subCategories || [],
       }));
 
       setCategories(mappedData);
